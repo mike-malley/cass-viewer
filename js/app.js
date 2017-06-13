@@ -77,6 +77,7 @@ function refreshFramework() {
             framework.competency = [];
         if (framework.relation == null)
             framework.relation = [];
+        $("#frameworkLink").attr("href", framework.shortId()).show();
         //repo.precache(framework.competency.concat(framework.relation), function (success) {
         if (framework.competency.length == 0)
             showAll();
@@ -89,6 +90,7 @@ function refreshFramework() {
                     treeNode.attr("id", competency.shortId());
                     if (competency.description != null && competency.description != "NULL" && competency.description != competency.name)
                         treeNode.prepend("<br><small>" + competency.description + "</small>");
+                    treeNode.prepend(" <a target='_blank' href='" + competency.shortId() + "'>🔗</a>");
                     treeNode.prepend("<span>" + competency.name + "</span>");
                     treeNode.prepend("<input type='checkbox'>").children().first().click(function (evt) {
                         console.log(evt);
