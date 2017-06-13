@@ -91,7 +91,9 @@ function refreshFramework() {
                     if (competency.description != null && competency.description != "NULL" && competency.description != competency.name)
                         treeNode.prepend("<br><small>" + competency.description + "</small>");
                     treeNode.prepend(" <a target='_blank' href='" + competency.shortId() + "'>🔗</a>");
-                    treeNode.prepend("<span>" + competency.name + "</span>");
+                    treeNode.prepend("<span>" + competency.name + "</span>").children().first().click(function (evt) {
+                        $(evt.target).parent().children("ul").slideToggle();
+                    });
                     treeNode.prepend("<input type='checkbox'>").children().first().click(function (evt) {
                         console.log(evt);
                         $(evt.target).parent().find("input").prop("checked", evt.target.checked);
