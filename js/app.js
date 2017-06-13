@@ -37,8 +37,7 @@ function refreshFrameworks() {
         loading++;
         EcFramework.search(r, searchTerm, function (frameworks) {
             for (var v = 0; v < frameworks.length; v++) {
-                $("#frameworks").append("<a style='display:none'/>").children().last().attr("id", frameworks[v].shortId()).text(frameworks[v].name).click(click);
-                $("#frameworks").append("<br>");
+                $("#frameworks").append("<p><a style='display:none'/></p>").children().last().children().last().attr("id", frameworks[v].shortId()).text(frameworks[v].name).click(click);
             }
             loading--;
             if (loading == 0) {
@@ -79,7 +78,9 @@ function refreshFramework() {
         if (framework.relation == null)
             framework.relation = [];
         //repo.precache(framework.competency.concat(framework.relation), function (success) {
-        if (framework.competency != undefined)
+        if (framework.competency.length == 0)
+            showAll();
+        else
             for (var i = 0; i < framework.competency.length; i++) {
                 me.fetches++;
                 EcCompetency.get(framework.competency[i], function (competency) {
