@@ -19,10 +19,28 @@ function base64ToBlob(base64Data, contentType) {
     return new Blob(byteArrays, { type: contentType });
 }
 
+function stringToFile(string,filename,contentType){
+	return new File([string],filename,{type:contentType});
+}
+
+function ecKeys(obj){return Object.keys(obj);}
+
 function ab2str(buf) {
 	return new TextDecoder("utf-8").decode(buf);
 }
 
 function str2ab(str) {
 	return new TextEncoder("utf-8").encode(str).buffer;
+}
+
+function ecLog(str){
+if (console)
+	if (console.log)
+	{
+		console.log(str);
+		return;
+	}
+else
+	if (print)
+		print(str);
 }

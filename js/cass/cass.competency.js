@@ -31,7 +31,7 @@ EcAssertion = stjs.extend(EcAssertion, Assertion, [], function(constructor, prot
     };
     prototype.getSubjectAsync = function(success, failure) {
         if (this.subject == null) {
-            failure("Subject not found.");
+            success(null);
             return;
         }
         var v = new EcEncryptedValue();
@@ -55,7 +55,7 @@ EcAssertion = stjs.extend(EcAssertion, Assertion, [], function(constructor, prot
     };
     prototype.getAgentAsync = function(success, failure) {
         if (this.agent == null) {
-            failure("Agent not found.");
+            success(null);
             return;
         }
         var v = new EcEncryptedValue();
@@ -141,7 +141,7 @@ EcAssertion = stjs.extend(EcAssertion, Assertion, [], function(constructor, prot
     };
     prototype.getAssertionDateAsync = function(success, failure) {
         if (this.assertionDate == null) {
-            failure("Assertion date not found.");
+            success(null);
             return;
         }
         var v = new EcEncryptedValue();
@@ -165,7 +165,7 @@ EcAssertion = stjs.extend(EcAssertion, Assertion, [], function(constructor, prot
     };
     prototype.getExpirationDateAsync = function(success, failure) {
         if (this.expirationDate == null) {
-            failure("Expiration date not found.");
+            success(null);
             return;
         }
         var v = new EcEncryptedValue();
@@ -192,7 +192,7 @@ EcAssertion = stjs.extend(EcAssertion, Assertion, [], function(constructor, prot
     };
     prototype.getEvidenceAsync = function(index, success, failure) {
         if (this.evidence[index] == null) {
-            failure("Evidence not found.");
+            success(null);
             return;
         }
         var v = new EcEncryptedValue();
@@ -216,7 +216,7 @@ EcAssertion = stjs.extend(EcAssertion, Assertion, [], function(constructor, prot
     };
     prototype.getDecayFunctionAsync = function(success, failure) {
         if (this.decayFunction == null) {
-            failure("Decay function not found.");
+            success(null);
             return;
         }
         var v = new EcEncryptedValue();
@@ -240,7 +240,7 @@ EcAssertion = stjs.extend(EcAssertion, Assertion, [], function(constructor, prot
     };
     prototype.getNegativeAsync = function(success, failure) {
         if (this.negative == null) {
-            failure("Negative not found.");
+            success(null);
             return;
         }
         var v = new EcEncryptedValue();
@@ -268,10 +268,13 @@ EcAssertion = stjs.extend(EcAssertion, Assertion, [], function(constructor, prot
         if (readers == null) 
             readers = new Array();
         if (this.subject != null) {
-            owners.concat(this.subject.owner);
-            readers.concat(this.subject.reader);
+            if (this.subject.owner != null) 
+                owners.concat(this.subject.owner);
+            if (this.subject.reader != null) 
+                readers.concat(this.subject.reader);
         }
-        owners = owners.concat(this.owner);
+        if (this.owner != null) 
+            owners = owners.concat(this.owner);
         readers.push(pk.toPem());
         this.subject = EcEncryptedValue.encryptValue(pk.toPem(), this.id, owners, readers);
     };
@@ -455,7 +458,7 @@ EcAssertion = stjs.extend(EcAssertion, Assertion, [], function(constructor, prot
     prototype.getSearchStringByTypeAndCompetency = function(competency) {
         return "(" + this.getSearchStringByType() + " AND competency:\"" + competency.shortId() + "\")";
     };
-}, {subject: "EcEncryptedValue", agent: "EcEncryptedValue", evidence: {name: "Array", arguments: ["EcEncryptedValue"]}, assertionDate: "EcEncryptedValue", expirationDate: "EcEncryptedValue", decayFunction: "EcEncryptedValue", negative: "EcEncryptedValue", image: "Object", potentialAction: "Action", mainEntityOfPage: "Object", owner: {name: "Array", arguments: [null]}, signature: {name: "Array", arguments: [null]}, reader: {name: "Array", arguments: [null]}, atProperties: {name: "Array", arguments: [null]}}, {});
+}, {subject: "EcEncryptedValue", agent: "EcEncryptedValue", evidence: {name: "Array", arguments: ["EcEncryptedValue"]}, assertionDate: "EcEncryptedValue", expirationDate: "EcEncryptedValue", decayFunction: "EcEncryptedValue", negative: "EcEncryptedValue", contributor: "Object", reviews: "Review", audience: "Audience", timeRequired: "Duration", publication: "PublicationEvent", contentLocation: "Place", temporalCoverage: "Object", isBasedOn: "Object", fileFormat: "Object", interactionStatistic: "InteractionCounter", recordedAt: "Event", isPartOf: "CreativeWork", exampleOfWork: "CreativeWork", dateCreated: "Object", releasedEvent: "PublicationEvent", publisher: "Object", encoding: "MediaObject", creator: "Object", hasPart: "CreativeWork", license: "Object", translator: "Object", offers: "Offer", schemaVersion: "Object", review: "Review", position: "Object", genre: "Object", character: "Person", producer: "Object", editor: "Person", locationCreated: "Place", about: "Thing", audio: "AudioObject", encodings: "MediaObject", funder: "Object", accountablePerson: "Person", material: "Object", author: "Object", sourceOrganization: "Organization", sponsor: "Object", provider: "Object", copyrightHolder: "Object", comment: "Comment", spatialCoverage: "Place", aggregateRating: "AggregateRating", educationalAlignment: "AlignmentObject", video: "VideoObject", version: "Object", mainEntity: "Thing", associatedMedia: "MediaObject", workExample: "CreativeWork", mentions: "Thing", citation: "Object", dateModified: "Object", inLanguage: "Object", isBasedOnUrl: "Object", identifier: "Object", image: "Object", potentialAction: "Action", mainEntityOfPage: "Object", owner: {name: "Array", arguments: [null]}, signature: {name: "Array", arguments: [null]}, reader: {name: "Array", arguments: [null]}, atProperties: {name: "Array", arguments: [null]}}, {});
 /**
  *  Implementation of a Rollup Rule object with methods for interacting with CASS
  *  services on a server.
@@ -614,7 +617,7 @@ EcRollupRule = stjs.extend(EcRollupRule, RollupRule, [], function(constructor, p
             }
         }, failure);
     };
-}, {image: "Object", potentialAction: "Action", mainEntityOfPage: "Object", owner: {name: "Array", arguments: [null]}, signature: {name: "Array", arguments: [null]}, reader: {name: "Array", arguments: [null]}, atProperties: {name: "Array", arguments: [null]}}, {});
+}, {contributor: "Object", reviews: "Review", audience: "Audience", timeRequired: "Duration", publication: "PublicationEvent", contentLocation: "Place", temporalCoverage: "Object", isBasedOn: "Object", fileFormat: "Object", interactionStatistic: "InteractionCounter", recordedAt: "Event", isPartOf: "CreativeWork", exampleOfWork: "CreativeWork", dateCreated: "Object", releasedEvent: "PublicationEvent", publisher: "Object", encoding: "MediaObject", creator: "Object", hasPart: "CreativeWork", license: "Object", translator: "Object", offers: "Offer", schemaVersion: "Object", review: "Review", position: "Object", genre: "Object", character: "Person", producer: "Object", editor: "Person", locationCreated: "Place", about: "Thing", audio: "AudioObject", encodings: "MediaObject", funder: "Object", accountablePerson: "Person", material: "Object", author: "Object", sourceOrganization: "Organization", sponsor: "Object", provider: "Object", copyrightHolder: "Object", comment: "Comment", spatialCoverage: "Place", aggregateRating: "AggregateRating", educationalAlignment: "AlignmentObject", video: "VideoObject", version: "Object", mainEntity: "Thing", associatedMedia: "MediaObject", workExample: "CreativeWork", mentions: "Thing", citation: "Object", dateModified: "Object", inLanguage: "Object", isBasedOnUrl: "Object", identifier: "Object", image: "Object", potentialAction: "Action", mainEntityOfPage: "Object", owner: {name: "Array", arguments: [null]}, signature: {name: "Array", arguments: [null]}, reader: {name: "Array", arguments: [null]}, atProperties: {name: "Array", arguments: [null]}}, {});
 /**
  *  Implementation of an alignment object with methods for interacting with CASS
  *  services on a server.
@@ -721,6 +724,11 @@ EcAlignment = stjs.extend(EcAlignment, Relation, [], function(constructor, proto
      */
     constructor.get = function(id, success, failure) {
         EcRepository.get(id, function(p1) {
+            if (stjs.isInstanceOf(p1.constructor, EcAlignment)) 
+                if (success != null) {
+                    success(p1);
+                    return;
+                }
             var relation = new EcAlignment();
             if (p1.isA(EcEncryptedValue.myType)) {
                 var encrypted = new EcEncryptedValue();
@@ -729,6 +737,10 @@ EcAlignment = stjs.extend(EcAlignment, Relation, [], function(constructor, proto
             }
             if (p1.isAny(relation.getTypes())) {
                 relation.copyFrom(p1);
+                if (EcRepository.caching) {
+                    (EcRepository.cache)[relation.shortId()] = relation;
+                    (EcRepository.cache)[relation.id] = relation;
+                }
                 if (success != null) 
                     success(relation);
             } else {
@@ -754,6 +766,8 @@ EcAlignment = stjs.extend(EcAlignment, Relation, [], function(constructor, proto
      */
     constructor.getBlocking = function(id) {
         var p1 = EcRepository.getBlocking(id);
+        if (stjs.isInstanceOf(p1.constructor, EcAlignment)) 
+            return p1;
         var alignment = new EcAlignment();
         if (p1.isA(EcEncryptedValue.myType)) {
             var encrypted = new EcEncryptedValue();
@@ -763,6 +777,10 @@ EcAlignment = stjs.extend(EcAlignment, Relation, [], function(constructor, proto
         }
         if (p1.isAny(alignment.getTypes())) {
             alignment.copyFrom(p1);
+            if (EcRepository.caching) {
+                (EcRepository.cache)[alignment.shortId()] = alignment;
+                (EcRepository.cache)[alignment.id] = alignment;
+            }
             return alignment;
         } else {
             var msg = "Retrieved object was not a relation";
@@ -869,6 +887,67 @@ EcAlignment = stjs.extend(EcAlignment, Relation, [], function(constructor, proto
         }, failure);
     };
     /**
+     *  Searches the repository for alignments with one of an array of IDs in the source field
+     *  
+     *  @memberOf EcAlignment
+     *  @method searchBySource
+     *  @static
+     *  @param {EcRepository} repo
+     *  			Repository to search for alignments with the source specified
+     *  @param {String} sourceId
+     *  			ID in the source field of the alignments to find
+     *  @param {Callback1<Array<EcAlignment>>} success
+     * 			Callback triggered on successful search return
+     *  @param {Callback1<String>} [failure]
+     *  			Callback triggered if error searching
+     *  @param {Object} [paramObj]
+     *  			Parameters to include in the search
+     *  		@param start
+     *  		@param size
+     */
+    constructor.searchBySources = function(repo, sourceIds, success, failure, paramObj) {
+        var query = "";
+        query = "(" + new EcAlignment().getSearchStringByType() + " AND (source:";
+        var noVersions = [];
+        for (var i = 0; i < sourceIds.length; i++) {
+            var sourceId = sourceIds[i];
+            if (i != 0) 
+                query += " OR ";
+            var noVersion = EcRemoteLinkedData.trimVersionFromUrl(sourceId);
+            if (noVersion == sourceId) {
+                query += "\"" + sourceId + "\"";
+            } else {
+                query += "\"" + sourceId + "\" OR source:\"" + noVersion + "\"";
+            }
+            noVersions.push(noVersion);
+        }
+        query += "))";
+        var finalNoVersions = noVersions;
+        repo.searchWithParams(query, paramObj, null, function(p1) {
+            if (success != null) {
+                var ret = [];
+                for (var i = 0; i < p1.length; i++) {
+                    var alignment = new EcAlignment();
+                    if (p1[i].isAny(alignment.getTypes())) {
+                        alignment.copyFrom(p1[i]);
+                    } else if (p1[i].isA(EcEncryptedValue.myType)) {
+                        var val = new EcEncryptedValue();
+                        val.copyFrom(p1[i]);
+                        if (val.isAnEncrypted(EcAlignment.myType)) {
+                            var obj = val.decryptIntoObject();
+                            if (sourceIds.indexOf((obj)["source"]) == -1 && finalNoVersions.indexOf((obj)["source"]) == -1) {
+                                continue;
+                            }
+                            alignment.copyFrom(obj);
+                        }
+                    }
+                    ret[i] = alignment;
+                }
+                success(ret);
+            }
+        }, failure);
+    };
+    /**
      *  Searches the repository for alignments with a specific ID in the target field
      *  
      *  @memberOf EcAlignment
@@ -921,7 +1000,7 @@ EcAlignment = stjs.extend(EcAlignment, Relation, [], function(constructor, proto
             }
         }, failure);
     };
-}, {image: "Object", potentialAction: "Action", mainEntityOfPage: "Object", owner: {name: "Array", arguments: [null]}, signature: {name: "Array", arguments: [null]}, reader: {name: "Array", arguments: [null]}, atProperties: {name: "Array", arguments: [null]}}, {});
+}, {contributor: "Object", reviews: "Review", audience: "Audience", timeRequired: "Duration", publication: "PublicationEvent", contentLocation: "Place", temporalCoverage: "Object", isBasedOn: "Object", fileFormat: "Object", interactionStatistic: "InteractionCounter", recordedAt: "Event", isPartOf: "CreativeWork", exampleOfWork: "CreativeWork", dateCreated: "Object", releasedEvent: "PublicationEvent", publisher: "Object", encoding: "MediaObject", creator: "Object", hasPart: "CreativeWork", license: "Object", translator: "Object", offers: "Offer", schemaVersion: "Object", review: "Review", position: "Object", genre: "Object", character: "Person", producer: "Object", editor: "Person", locationCreated: "Place", about: "Thing", audio: "AudioObject", encodings: "MediaObject", funder: "Object", accountablePerson: "Person", material: "Object", author: "Object", sourceOrganization: "Organization", sponsor: "Object", provider: "Object", copyrightHolder: "Object", comment: "Comment", spatialCoverage: "Place", aggregateRating: "AggregateRating", educationalAlignment: "AlignmentObject", video: "VideoObject", version: "Object", mainEntity: "Thing", associatedMedia: "MediaObject", workExample: "CreativeWork", mentions: "Thing", citation: "Object", dateModified: "Object", inLanguage: "Object", isBasedOnUrl: "Object", identifier: "Object", image: "Object", potentialAction: "Action", mainEntityOfPage: "Object", owner: {name: "Array", arguments: [null]}, signature: {name: "Array", arguments: [null]}, reader: {name: "Array", arguments: [null]}, atProperties: {name: "Array", arguments: [null]}}, {});
 /**
  *  Implementation of a Level object with methods for interacting with CASS
  *  services on a server.
@@ -1164,7 +1243,7 @@ EcLevel = stjs.extend(EcLevel, Level, [], function(constructor, prototype) {
             }
         }, failure);
     };
-}, {image: "Object", potentialAction: "Action", mainEntityOfPage: "Object", owner: {name: "Array", arguments: [null]}, signature: {name: "Array", arguments: [null]}, reader: {name: "Array", arguments: [null]}, atProperties: {name: "Array", arguments: [null]}}, {});
+}, {contributor: "Object", reviews: "Review", audience: "Audience", timeRequired: "Duration", publication: "PublicationEvent", contentLocation: "Place", temporalCoverage: "Object", isBasedOn: "Object", fileFormat: "Object", interactionStatistic: "InteractionCounter", recordedAt: "Event", isPartOf: "CreativeWork", exampleOfWork: "CreativeWork", dateCreated: "Object", releasedEvent: "PublicationEvent", publisher: "Object", encoding: "MediaObject", creator: "Object", hasPart: "CreativeWork", license: "Object", translator: "Object", offers: "Offer", schemaVersion: "Object", review: "Review", position: "Object", genre: "Object", character: "Person", producer: "Object", editor: "Person", locationCreated: "Place", about: "Thing", audio: "AudioObject", encodings: "MediaObject", funder: "Object", accountablePerson: "Person", material: "Object", author: "Object", sourceOrganization: "Organization", sponsor: "Object", provider: "Object", copyrightHolder: "Object", comment: "Comment", spatialCoverage: "Place", aggregateRating: "AggregateRating", educationalAlignment: "AlignmentObject", video: "VideoObject", version: "Object", mainEntity: "Thing", associatedMedia: "MediaObject", workExample: "CreativeWork", mentions: "Thing", citation: "Object", dateModified: "Object", inLanguage: "Object", isBasedOnUrl: "Object", identifier: "Object", image: "Object", potentialAction: "Action", mainEntityOfPage: "Object", owner: {name: "Array", arguments: [null]}, signature: {name: "Array", arguments: [null]}, reader: {name: "Array", arguments: [null]}, atProperties: {name: "Array", arguments: [null]}}, {});
 /**
  *  Implementation of a Competency object with methods for interacting with CASS
  *  services on a server.
@@ -1452,28 +1531,6 @@ EcCompetency = stjs.extend(EcCompetency, Competency, [], function(constructor, p
         }, failure);
     };
     /**
-     *  Method to set competency name
-     *  
-     *  @memberOf EcCompetency
-     *  @method setName
-     *  @param {String} name
-     * 			Name to set for this competency
-     */
-    prototype.setName = function(name) {
-        this.name = name;
-    };
-    /**
-     *  Method to set competency description
-     *  
-     *  @memberOf EcCompetency
-     *  @method setDescription
-     *  @param {String} description
-     *  			Description to set for its competency
-     */
-    prototype.setDescription = function(description) {
-        this.description = description;
-    };
-    /**
      *  Method to set competency scope
      *  
      *  @memberOf EcCompetency
@@ -1505,6 +1562,8 @@ EcCompetency = stjs.extend(EcCompetency, Competency, [], function(constructor, p
         }
         EcRepository._save(this, success, failure);
     };
+    constructor.relDone = {};
+    constructor.levelDone = {};
     /**
      *  Deletes the competency from the server
      *  
@@ -1536,8 +1595,12 @@ EcCompetency = stjs.extend(EcCompetency, Competency, [], function(constructor, p
                         }
                     }
                 }, failure, function(p1) {
-                    if (success != null) 
-                        success("");
+                    if (EcCompetency.levelDone[this.id]) {
+                        if (success != null) 
+                            success("");
+                    } else {
+                        EcCompetency.relDone[this.id] = true;
+                    }
                 });
                 me.levels(repo, function(p1) {
                     for (var i = 0; i < EcIdentityManager.ids.length; i++) {
@@ -1552,8 +1615,12 @@ EcCompetency = stjs.extend(EcCompetency, Competency, [], function(constructor, p
                         }
                     }
                 }, failure, function(p1) {
-                    if (success != null) 
-                        success("");
+                    if (EcCompetency.relDone[this.id]) {
+                        if (success != null) 
+                            success("");
+                    } else {
+                        EcCompetency.levelDone[this.id] = true;
+                    }
                 });
             } else {
                 if (success != null) 
@@ -1577,6 +1644,11 @@ EcCompetency = stjs.extend(EcCompetency, Competency, [], function(constructor, p
      */
     constructor.get = function(id, success, failure) {
         EcRepository.get(id, function(p1) {
+            if (stjs.isInstanceOf(p1.constructor, EcCompetency)) 
+                if (success != null) {
+                    success(p1);
+                    return;
+                }
             var competency = new EcCompetency();
             if (p1.isA(EcEncryptedValue.myType)) {
                 var encrypted = new EcEncryptedValue();
@@ -1586,6 +1658,10 @@ EcCompetency = stjs.extend(EcCompetency, Competency, [], function(constructor, p
             }
             if (p1.isAny(competency.getTypes())) {
                 competency.copyFrom(p1);
+                if (EcRepository.caching) {
+                    (EcRepository.cache)[competency.shortId()] = competency;
+                    (EcRepository.cache)[competency.id] = competency;
+                }
                 if (success != null) 
                     success(competency);
             } else {
@@ -1611,6 +1687,8 @@ EcCompetency = stjs.extend(EcCompetency, Competency, [], function(constructor, p
      */
     constructor.getBlocking = function(id) {
         var p1 = EcRepository.getBlocking(id);
+        if (p1 == null) 
+            return null;
         var competency = new EcCompetency();
         if (p1.isA(EcEncryptedValue.myType)) {
             var encrypted = new EcEncryptedValue();
@@ -1675,16 +1753,16 @@ EcCompetency = stjs.extend(EcCompetency, Competency, [], function(constructor, p
             }
         }, failure);
     };
-}, {image: "Object", potentialAction: "Action", mainEntityOfPage: "Object", owner: {name: "Array", arguments: [null]}, signature: {name: "Array", arguments: [null]}, reader: {name: "Array", arguments: [null]}, atProperties: {name: "Array", arguments: [null]}}, {});
+}, {relDone: {name: "Map", arguments: [null, null]}, levelDone: {name: "Map", arguments: [null, null]}, contributor: "Object", reviews: "Review", audience: "Audience", timeRequired: "Duration", publication: "PublicationEvent", contentLocation: "Place", temporalCoverage: "Object", isBasedOn: "Object", fileFormat: "Object", interactionStatistic: "InteractionCounter", recordedAt: "Event", isPartOf: "CreativeWork", exampleOfWork: "CreativeWork", dateCreated: "Object", releasedEvent: "PublicationEvent", publisher: "Object", encoding: "MediaObject", creator: "Object", hasPart: "CreativeWork", license: "Object", translator: "Object", offers: "Offer", schemaVersion: "Object", review: "Review", position: "Object", genre: "Object", character: "Person", producer: "Object", editor: "Person", locationCreated: "Place", about: "Thing", audio: "AudioObject", encodings: "MediaObject", funder: "Object", accountablePerson: "Person", material: "Object", author: "Object", sourceOrganization: "Organization", sponsor: "Object", provider: "Object", copyrightHolder: "Object", comment: "Comment", spatialCoverage: "Place", aggregateRating: "AggregateRating", educationalAlignment: "AlignmentObject", video: "VideoObject", version: "Object", mainEntity: "Thing", associatedMedia: "MediaObject", workExample: "CreativeWork", mentions: "Thing", citation: "Object", dateModified: "Object", inLanguage: "Object", isBasedOnUrl: "Object", identifier: "Object", image: "Object", potentialAction: "Action", mainEntityOfPage: "Object", owner: {name: "Array", arguments: [null]}, signature: {name: "Array", arguments: [null]}, reader: {name: "Array", arguments: [null]}, atProperties: {name: "Array", arguments: [null]}}, {});
 /**
  *  Implementation of a Framework object with methods for interacting with CASS
  *  services on a server.
- *  
+ * 
  *  @module org.cassproject
  *  @class EcFramework
  *  @constructor
  *  @extends Framework
- *  
+ * 
  *  @author fritz.ray@eduworks.com
  *  @author devlin.junker@eduworks.com
  */
@@ -1696,7 +1774,7 @@ EcFramework = stjs.extend(EcFramework, Framework, [], function(constructor, prot
     constructor.levelDone = {};
     /**
      *  Adds the competency ID specified to the frameworks list of competency IDs
-     *  
+     * 
      *  @memberOf EcFramework
      *  @method addCompetency
      *  @param {String} id
@@ -1714,9 +1792,9 @@ EcFramework = stjs.extend(EcFramework, Framework, [], function(constructor, prot
     /**
      *  Removes a competency ID from the framework's list, also removes any
      *  levels and relations associated with that competency
-     *  
+     * 
      *  TODO: remove rollup rules? should we add flag to remove these extras
-     *  
+     * 
      *  @memberOf EcFramework
      *  @method removeCompetency
      *  @param {String} id
@@ -1765,7 +1843,7 @@ EcFramework = stjs.extend(EcFramework, Framework, [], function(constructor, prot
     };
     /**
      *  Helper method to remove relationships associated with a competency from this framework
-     *  
+     * 
      *  @memberOf EcFramework
      *  @method removeRelationshipsThatInclude
      *  @private
@@ -1799,7 +1877,7 @@ EcFramework = stjs.extend(EcFramework, Framework, [], function(constructor, prot
     };
     /**
      *  Helper method to remove levels associated with a competency from this framework
-     *  
+     * 
      *  @memberOf EcFramework
      *  @method removeLevelsThatInclude
      *  @private
@@ -1830,7 +1908,7 @@ EcFramework = stjs.extend(EcFramework, Framework, [], function(constructor, prot
     };
     /**
      *  Adds a relation ID to the framework's list of relations
-     *  
+     * 
      *  @memberOf EcFramework
      *  @method addRelation
      *  @param {String} id
@@ -1847,7 +1925,7 @@ EcFramework = stjs.extend(EcFramework, Framework, [], function(constructor, prot
     };
     /**
      *  Removes a relation ID from the framework's list of relations
-     *  
+     * 
      *  @memberOf EcFramework
      *  @method removeCompetency
      *  @param {String} id
@@ -1863,7 +1941,7 @@ EcFramework = stjs.extend(EcFramework, Framework, [], function(constructor, prot
     };
     /**
      *  Adds a level ID to the framework's list of levels
-     *  
+     * 
      *  @memberOf EcFramework
      *  @method addLevel
      *  @param {String} id
@@ -1880,7 +1958,7 @@ EcFramework = stjs.extend(EcFramework, Framework, [], function(constructor, prot
     };
     /**
      *  Removes a level ID from the framework's list of levels
-     *  
+     * 
      *  @memberOf EcFramework
      *  @method removeLevel
      *  @param {String} id
@@ -1896,7 +1974,7 @@ EcFramework = stjs.extend(EcFramework, Framework, [], function(constructor, prot
     };
     /**
      *  Adds a rollup rule ID to the framework's list of rollup rules
-     *  
+     * 
      *  @memberOf EcFramework
      *  @method addRollupRule
      *  @param {String} id
@@ -1913,7 +1991,7 @@ EcFramework = stjs.extend(EcFramework, Framework, [], function(constructor, prot
     };
     /**
      *  Removes a rollup rule ID from the framework's list of rollup rules
-     *  
+     * 
      *  @memberOf EcFramework
      *  @method removeRollupRule
      *  @param {String} id
@@ -1929,7 +2007,7 @@ EcFramework = stjs.extend(EcFramework, Framework, [], function(constructor, prot
     };
     /**
      *  Saves this frameworks details on the server specified by it's ID
-     *  
+     * 
      *  @memberOf EcFramework
      *  @method save
      *  @param {Callback1<String>} success
@@ -1950,7 +2028,7 @@ EcFramework = stjs.extend(EcFramework, Framework, [], function(constructor, prot
     };
     /**
      *  Deletes this framework from the server specified by it's ID
-     *  
+     * 
      *  @memberOf EcFramework
      *  @method _delete
      *  @param {Callback1<String>} success
@@ -1963,7 +2041,7 @@ EcFramework = stjs.extend(EcFramework, Framework, [], function(constructor, prot
     };
     /**
      *  Retrieves a framework from the server, specified by the ID
-     *  
+     * 
      *  @memberOf EcFramework
      *  @method get
      *  @static
@@ -2001,8 +2079,40 @@ EcFramework = stjs.extend(EcFramework, Framework, [], function(constructor, prot
         });
     };
     /**
+     *  Retrieves a framework from the server in a blocking fashion, specified by the ID
+     * 
+     *  @memberOf EcFramework
+     *  @method getBlocking
+     *  @static
+     *  @param {String} id
+     *  			ID of the framework to retrieve
+     *  @param {Callback1<EcFramework>} success
+     *  			Callback triggered after successfully retrieving the framework,
+     *  			returns the retrieved framework
+     *  @param {Callback1<String>} failure
+     *  			Callback triggered if an error occurs while retrieving the framework
+     */
+    constructor.getBlocking = function(id) {
+        var p1 = EcRepository.getBlocking(id);
+        if (p1 == null) 
+            return null;
+        var framework = new EcFramework();
+        if (p1.isA(EcEncryptedValue.myType)) {
+            var encrypted = new EcEncryptedValue();
+            encrypted.copyFrom(p1);
+            p1 = encrypted.decryptIntoObject();
+            EcEncryptedValue.encryptOnSave(p1.id, true);
+        }
+        if (p1.isAny(framework.getTypes())) {
+            framework.copyFrom(p1);
+            return framework;
+        } else {
+            return null;
+        }
+    };
+    /**
      *  Searches the repository given for frameworks using the query passed in
-     *  
+     * 
      *  @memberOf EcFramework
      *  @method search
      *  @static
@@ -2049,4 +2159,4 @@ EcFramework = stjs.extend(EcFramework, Framework, [], function(constructor, prot
             }
         }, failure);
     };
-}, {relDone: {name: "Map", arguments: [null, null]}, levelDone: {name: "Map", arguments: [null, null]}, competency: {name: "Array", arguments: [null]}, relation: {name: "Array", arguments: [null]}, level: {name: "Array", arguments: [null]}, rollupRule: {name: "Array", arguments: [null]}, image: "Object", potentialAction: "Action", mainEntityOfPage: "Object", owner: {name: "Array", arguments: [null]}, signature: {name: "Array", arguments: [null]}, reader: {name: "Array", arguments: [null]}, atProperties: {name: "Array", arguments: [null]}}, {});
+}, {relDone: {name: "Map", arguments: [null, null]}, levelDone: {name: "Map", arguments: [null, null]}, competency: {name: "Array", arguments: [null]}, relation: {name: "Array", arguments: [null]}, level: {name: "Array", arguments: [null]}, rollupRule: {name: "Array", arguments: [null]}, contributor: "Object", reviews: "Review", audience: "Audience", timeRequired: "Duration", publication: "PublicationEvent", contentLocation: "Place", temporalCoverage: "Object", isBasedOn: "Object", fileFormat: "Object", interactionStatistic: "InteractionCounter", recordedAt: "Event", isPartOf: "CreativeWork", exampleOfWork: "CreativeWork", dateCreated: "Object", releasedEvent: "PublicationEvent", publisher: "Object", encoding: "MediaObject", creator: "Object", hasPart: "CreativeWork", license: "Object", translator: "Object", offers: "Offer", schemaVersion: "Object", review: "Review", position: "Object", genre: "Object", character: "Person", producer: "Object", editor: "Person", locationCreated: "Place", about: "Thing", audio: "AudioObject", encodings: "MediaObject", funder: "Object", accountablePerson: "Person", material: "Object", author: "Object", sourceOrganization: "Organization", sponsor: "Object", provider: "Object", copyrightHolder: "Object", comment: "Comment", spatialCoverage: "Place", aggregateRating: "AggregateRating", educationalAlignment: "AlignmentObject", video: "VideoObject", version: "Object", mainEntity: "Thing", associatedMedia: "MediaObject", workExample: "CreativeWork", mentions: "Thing", citation: "Object", dateModified: "Object", inLanguage: "Object", isBasedOnUrl: "Object", identifier: "Object", image: "Object", potentialAction: "Action", mainEntityOfPage: "Object", owner: {name: "Array", arguments: [null]}, signature: {name: "Array", arguments: [null]}, reader: {name: "Array", arguments: [null]}, atProperties: {name: "Array", arguments: [null]}}, {});

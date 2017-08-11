@@ -8,9 +8,20 @@
  Unless required by applicable law or agreed to in writing, software distributed under the License is distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the License for the specific language governing permissions and limitations under the License.
 */
 
-var error = function (error) {
-    console.log(error);
-}
+queryParams = function () {
+    if (window.document.location.search == null)
+        return {};
+    var hashSplit = (window.document.location.search.split("?"));
+    if (hashSplit.length > 1) {
+        var o = {};
+        var paramString = hashSplit[1];
+        var parts = (paramString).split("&");
+        for (var i = 0; i < parts.length; i++)
+            o[parts[i].split("=")[0]] = parts[i].replace(parts[i].split("=")[0] + "=", "");
+        return o;
+    }
+    return {};
+};
 
 var repo = new EcRepository();
 repo.selectedServer = "";
@@ -20,6 +31,16 @@ EcRepository.caching = true;
 var frameworkId = "";
 
 var servers = ["https://sandbox.cassproject.org/api/custom", "https://dev.cassproject.org/api/custom"];
+
+if (queryParams().server != null)
+    servers = [queryParams().server];
+
+for (var i = 0; i < servers.length; i++) {
+    var r = new EcRepository();
+    r.selectedServer = servers[i];
+    r.autoDetectRepository();
+    servers[i] = r;
+}
 
 var repos = [];
 
@@ -32,10 +53,8 @@ function refreshFrameworks() {
     $("#sidebar").find("#loading").show();
     $("#sidebar").find("a,br").remove();
     for (var i = 0; i < servers.length; i++) {
-        var r = new EcRepository();
-        r.selectedServer = servers[i];
         loading++;
-        EcFramework.search(r, searchTerm, function (frameworks) {
+        EcFramework.search(servers[i], searchTerm, function (frameworks) {
             for (var v = 0; v < frameworks.length; v++) {
                 $("#frameworks").append("<p><a style='display:none'/></p>").children().last().children().last().attr("id", frameworks[v].shortId()).text(frameworks[v].name).click(click);
             }
@@ -44,7 +63,7 @@ function refreshFrameworks() {
                 $("#sidebar").find("#loading").hide();
                 $("#sidebar").find("a").show();
             }
-        }, error, {
+        }, console.log, {
             size: 5000
         });
     }
@@ -122,19 +141,19 @@ function refreshFramework() {
                                                     if (me.fetches == 0) {
                                                         showAll();
                                                     }
-                                                }, error);
+                                                }, console.log);
                                             }
                                         }
                                     }
-                                }, error);
+                                }, console.log);
                             }
                         } else
                             showAll();
                     }
-                }, error);
+                }, console.log);
             }
             //});
-    }, error);
+    }, console.log);
 }
 
 

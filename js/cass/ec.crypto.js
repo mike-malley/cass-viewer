@@ -7,15 +7,6 @@
 
  Unless required by applicable law or agreed to in writing, software distributed under the License is distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the License for the specific language governing permissions and limitations under the License.
 */
-/**
- * 
- *  @author Fritz
- */
-var EcCrypto = function() {};
-EcCrypto = stjs.extend(EcCrypto, null, [], function(constructor, prototype) {
-    constructor.caching = false;
-    constructor.decryptionCache = new Object();
-}, {decryptionCache: "Object"}, {});
 var AlgorithmIdentifier = function() {};
 AlgorithmIdentifier = stjs.extend(AlgorithmIdentifier, null, [], function(constructor, prototype) {
     prototype.name = null;
@@ -26,6 +17,15 @@ AlgorithmIdentifier = stjs.extend(AlgorithmIdentifier, null, [], function(constr
     prototype.iv = null;
     prototype.counter = null;
 }, {iv: "ArrayBuffer", counter: "ArrayBuffer"}, {});
+/**
+ * 
+ *  @author Fritz
+ */
+var EcCrypto = function() {};
+EcCrypto = stjs.extend(EcCrypto, null, [], function(constructor, prototype) {
+    constructor.caching = false;
+    constructor.decryptionCache = new Object();
+}, {decryptionCache: "Object"}, {});
 /**
  *  Helper classes for dealing with RSA Public Keys.
  *  @class EcPk
@@ -52,6 +52,9 @@ EcPk = stjs.extend(EcPk, null, [], function(constructor, prototype) {
         return pk;
     };
     prototype.pk = null;
+    prototype.jwk = null;
+    prototype.key = null;
+    prototype.signKey = null;
     /**
      *  Compares two public keys, and returns true if their PEM forms match.
      *  @method equals
@@ -75,7 +78,7 @@ EcPk = stjs.extend(EcPk, null, [], function(constructor, prototype) {
     /**
      *  Encodes the public key into a PEM encoded RSAPublicKey (PKCS#1) formatted RSA Public Key.
      *  (In case you were curious.)
-     *  @method toPem
+     *  @method toPkcs1Pem
      *  @return {string} PEM encoded public key without whitespace.
      */
     prototype.toPkcs1Pem = function() {
@@ -84,15 +87,20 @@ EcPk = stjs.extend(EcPk, null, [], function(constructor, prototype) {
     /**
      *  Encodes the public key into a PEM encoded SubjectPublicKeyInfo (PKCS#8) formatted RSA Public Key.
      *  (In case you were curious.)
-     *  @method toPem
+     *  @method toPkcs8Pem
      *  @return {string} PEM encoded public key without whitespace.
      */
     prototype.toPkcs8Pem = function() {
         return forge.pki.publicKeyToPem(this.pk).replaceAll("\r?\n", "");
     };
+    prototype.toJwk = function() {
+        if (this.jwk == null) 
+            this.jwk = pemJwk.pem2jwk(forge.pki.publicKeyToPem(this.pk));
+        return this.jwk;
+    };
     /**
      *  Hashes the public key into an SSH compatible fingerprint.
-     *  @method toHash
+     *  @method fingerprint
      *  @return {string} Public key fingerprint.
      */
     prototype.fingerprint = function() {
@@ -103,7 +111,9 @@ EcPk = stjs.extend(EcPk, null, [], function(constructor, prototype) {
     prototype.verify = function(bytes, decode64) {
         return this.pk.verify(bytes, decode64);
     };
-}, {pk: "forge.pk"}, {});
+}, {pk: "forge.pk", jwk: "Object", key: "CryptoKey", signKey: "CryptoKey"}, {});
+var CryptoKey = function() {};
+CryptoKey = stjs.extend(CryptoKey, null, [], null, {}, {});
 /**
  * Secure Hash Algorithm with 256-bit digest (SHA-256) implementation.
  *
@@ -4012,8 +4022,6 @@ define([
   defineFunc.apply(null, Array.prototype.slice.call(arguments, 0));
 });
 })();
-var CryptoKey = function() {};
-CryptoKey = stjs.extend(CryptoKey, null, [], null, {}, {});
 /**
  * Secure Hash Algorithm with 160-bit digest (SHA-1) implementation.
  *
@@ -6566,6 +6574,9 @@ EcRsaOaep = stjs.extend(EcRsaOaep, null, [], function(constructor, prototype) {
      *  @param {string} plaintext Plaintext. Does not perform encoding.
      */
     constructor.encrypt = function(pk, plaintext) {
+        if ($ == null) {
+            return rsaEncrypt(plaintext, pk.toPem());
+        }
         return forge.util.encode64(pk.pk.encrypt(plaintext, "RSA-OAEP"));
     };
     /**
@@ -6580,14 +6591,21 @@ EcRsaOaep = stjs.extend(EcRsaOaep, null, [], function(constructor, prototype) {
      */
     constructor.decrypt = function(ppk, ciphertext) {
         if (EcCrypto.caching) {
-            var cacheGet = (EcCrypto.decryptionCache)[ppk.toPem() + ciphertext];
+            var cacheGet = null;
+            cacheGet = (EcCrypto.decryptionCache)[ppk.toPem() + ciphertext];
             if (cacheGet != null) {
                 return cacheGet;
             }
         }
-        var result = ppk.ppk.decrypt(forge.util.decode64(ciphertext), "RSA-OAEP");
-        if (EcCrypto.caching) 
+        var result;
+        if ($ == null) {
+            result = rsaDecrypt(ciphertext, ppk.toPem());
+        } else {
+            result = ppk.ppk.decrypt(forge.util.decode64(ciphertext), "RSA-OAEP");
+        }
+        if (EcCrypto.caching) {
             (EcCrypto.decryptionCache)[ppk.toPem() + ciphertext] = result;
+        }
         return result;
     };
     /**
@@ -6602,6 +6620,9 @@ EcRsaOaep = stjs.extend(EcRsaOaep, null, [], function(constructor, prototype) {
      *  @return Base64 encoded signature.
      */
     constructor.sign = function(ppk, text) {
+        if ($ == null) {
+            return rsaSign(text, ppk.toPem());
+        }
         var s = forge.md.sha1.create();
         s.update(text, "utf8");
         return forge.util.encode64(ppk.ppk.sign(s));
@@ -6634,6 +6655,9 @@ EcRsaOaep = stjs.extend(EcRsaOaep, null, [], function(constructor, prototype) {
      *  @return True IFF the signature is valid.
      */
     constructor.verify = function(pk, text, signature) {
+        if ($ == null) {
+            return rsaVerify(signature, pk.toPem(), text);
+        }
         var s = forge.md.sha1.create();
         s.update(text, "utf8");
         try {
@@ -6642,77 +6666,6 @@ EcRsaOaep = stjs.extend(EcRsaOaep, null, [], function(constructor, prototype) {
             return false;
         }
     };
-}, {}, {});
-var EcAesCtrAsyncNative = function() {};
-EcAesCtrAsyncNative = stjs.extend(EcAesCtrAsyncNative, null, [], function(constructor, prototype) {
-    constructor.encrypt = function(text, secret, iv, success, failure) {
-        var keyUsages = new Array();
-        keyUsages.push("encrypt", "decrypt");
-        var algorithm = new AlgorithmIdentifier();
-        algorithm.name = "AES-CTR";
-        algorithm.counter = base64.decode(iv);
-        algorithm.length = 128;
-        var data;
-        data = str2ab(text);
-        window.crypto.subtle.importKey("raw", base64.decode(secret), algorithm, false, keyUsages).then(function(key) {
-            var p = window.crypto.subtle.encrypt(algorithm, key, data);
-            p.then(function(p1) {
-                success(base64.encode(p1));
-            });
-        });
-    };
-    constructor.decrypt = function(text, secret, iv, success, failure) {
-        var keyUsages = new Array();
-        keyUsages.push("encrypt", "decrypt");
-        var algorithm = new AlgorithmIdentifier();
-        algorithm.name = "AES-CTR";
-        algorithm.counter = base64.decode(iv);
-        algorithm.length = 128;
-        var data;
-        data = base64.decode(text);
-        window.crypto.subtle.importKey("raw", base64.decode(secret), algorithm, false, keyUsages).then(function(key) {
-            var p = window.crypto.subtle.decrypt(algorithm, key, data);
-            p.then(function(p1) {
-                success(ab2str(p1));
-            });
-        });
-    };
-}, {}, {});
-var EcRsaOaepAsyncNative = function() {};
-EcRsaOaepAsyncNative = stjs.extend(EcRsaOaepAsyncNative, null, [], function(constructor, prototype) {
-    constructor.encrypt = function(pk, text, success, failure) {
-        var base64pk = pk.toPkcs8Pem().replace("-----BEGIN RSA PUBLIC KEY-----", "").replace("-----END RSA PUBLIC KEY-----", "");
-        var keyUsages = new Array();
-        keyUsages.push("encrypt");
-        var algorithm = new AlgorithmIdentifier();
-        algorithm.name = "RSA-OAEP";
-        algorithm.hash = "SHA-1";
-        var data;
-        data = str2ab(text);
-        window.crypto.subtle.importKey("spki", base64.decode(base64pk), algorithm, false, keyUsages).then(function(key) {
-            var p = window.crypto.subtle.encrypt(algorithm, key, data);
-            p.then(function(p1) {
-                success(base64.encode(p1));
-            });
-        });
-    };
-    constructor.decrypt = function(ppk, text, success, failure) {
-        var base64ppk = ppk.toPem().replace("-----BEGIN RSA PRIVATE KEY-----", "").replace("-----END RSA PRIVATE KEY-----", "");
-        var keyUsages = new Array();
-        keyUsages.push("decrypt");
-        var algorithm = new AlgorithmIdentifier();
-        algorithm.name = "RSA-OAEP";
-        algorithm.hash = "SHA-1";
-        window.crypto.subtle.importKey("pkcs8", base64.decode(base64ppk), algorithm, false, keyUsages).then(function(key) {
-            var p = window.crypto.subtle.decrypt(algorithm, key, base64.decode(text));
-            p.then(function(p1) {
-                success(ab2str(p1));
-            });
-        });
-    };
-    constructor.sign = function(ppk, text, success, failure) {};
-    constructor.signSha256 = function(ppk, text, success, failure) {};
-    constructor.verify = function(pk, text, signature, success, failure) {};
 }, {}, {});
 /**
  *  Helper classes for dealing with RSA Private Keys.
@@ -6769,6 +6722,9 @@ EcPpk = stjs.extend(EcPpk, null, [], function(constructor, prototype) {
         return ppk;
     };
     prototype.ppk = null;
+    prototype.jwk = null;
+    prototype.key = null;
+    prototype.signKey = null;
     /**
      *  Returns true iff the PEM forms of the public private keypair match.
      *  Can also match against a public key if the public portion of the keypair match.
@@ -6808,7 +6764,12 @@ EcPpk = stjs.extend(EcPpk, null, [], function(constructor, prototype) {
      *  @return {string} PEM encoded public key without whitespace.
      */
     prototype.toPkcs8Pem = function() {
-        return forge.pki.privateKeyInfoToPem(this.ppk).replaceAll("\r?\n", "");
+        return forge.pki.privateKeyInfoToPem(forge.pki.wrapRsaPrivateKey(forge.pki.privateKeyToAsn1(this.ppk))).replaceAll("\r?\n", "");
+    };
+    prototype.toJwk = function() {
+        if (this.jwk == null) 
+            this.jwk = pemJwk.pem2jwk(forge.pki.privateKeyToPem(this.ppk));
+        return this.jwk;
     };
     prototype.toPkcs8 = function() {
         return forge.pki.wrapRsaPrivateKey(forge.pki.privateKeyToAsn1(this.ppk));
@@ -6836,7 +6797,7 @@ EcPpk = stjs.extend(EcPpk, null, [], function(constructor, prototype) {
         }
         return false;
     };
-}, {ppk: "forge.ppk"}, {});
+}, {ppk: "forge.ppk", jwk: "Object", key: "CryptoKey", signKey: "CryptoKey"}, {});
 /**
  *  Encrypts data synchronously using AES-256-CTR. Requires secret and iv to be 32 bytes.
  *  Output is encoded in base64 for easier handling.
@@ -6858,6 +6819,8 @@ EcAesCtr = stjs.extend(EcAesCtr, null, [], function(constructor, prototype) {
      *  @return {string} Ciphertext encoded using base64.
      */
     constructor.encrypt = function(plaintext, secret, iv) {
+        if ($ == null && forge.util.decode64(secret).length == 16 && forge.util.decode64(iv).length == 16) 
+            return aesEncrypt(plaintext, iv, secret);
         var c = forge.cipher.createCipher("AES-CTR", forge.util.decode64(secret));
         c.start(new EcAesParameters(iv));
         c.update(forge.util.createBuffer(plaintext));
@@ -6882,6 +6845,12 @@ EcAesCtr = stjs.extend(EcAesCtr, null, [], function(constructor, prototype) {
             if (cacheGet != null) 
                 return cacheGet;
         }
+        if ($ == null && forge.util.decode64(secret).length == 16 && forge.util.decode64(iv).length == 16) {
+            var result = aesDecrypt(ciphertext, iv, secret);
+            if (EcCrypto.caching) 
+                (EcCrypto.decryptionCache)[secret + iv + ciphertext] = result;
+            return result;
+        }
         var c = forge.cipher.createDecipher("AES-CTR", forge.util.decode64(secret));
         c.start(new EcAesParameters(iv));
         c.update(forge.util.createBuffer(forge.util.decode64(ciphertext)));
@@ -6900,8 +6869,8 @@ EcAesCtr = stjs.extend(EcAesCtr, null, [], function(constructor, prototype) {
  *  @module com.eduworks.ec
  *  @author fritz.ray@eduworks.com
  */
-var EcRsaOaepAsync = function() {};
-EcRsaOaepAsync = stjs.extend(EcRsaOaepAsync, null, [], function(constructor, prototype) {
+var EcRsaOaepAsyncWorker = function() {};
+EcRsaOaepAsyncWorker = stjs.extend(EcRsaOaepAsyncWorker, null, [], function(constructor, prototype) {
     constructor.rotator = 0;
     constructor.w = null;
     constructor.q1 = null;
@@ -6913,33 +6882,36 @@ EcRsaOaepAsync = stjs.extend(EcRsaOaepAsync, null, [], function(constructor, pro
         if (!EcRemote.async) {
             return;
         }
-        if (EcRsaOaepAsync.w != null) {
+        if (EcRsaOaepAsyncWorker.w != null) {
             return;
         }
-        EcRsaOaepAsync.rotator = 0;
-        EcRsaOaepAsync.q1 = new Array();
-        EcRsaOaepAsync.q2 = new Array();
-        EcRsaOaepAsync.w = new Array();
+        EcRsaOaepAsyncWorker.rotator = 0;
+        EcRsaOaepAsyncWorker.q1 = new Array();
+        EcRsaOaepAsyncWorker.q2 = new Array();
+        EcRsaOaepAsyncWorker.w = new Array();
         for (var index = 0; index < 8; index++) {
-            EcRsaOaepAsync.createWorker(index);
+            EcRsaOaepAsyncWorker.createWorker(index);
         }
     };
     constructor.createWorker = function(index) {
-        EcRsaOaepAsync.q1.push(new Array());
-        EcRsaOaepAsync.q2.push(new Array());
+        EcRsaOaepAsyncWorker.q1.push(new Array());
+        EcRsaOaepAsyncWorker.q2.push(new Array());
         var wkr;
-        EcRsaOaepAsync.w.push(wkr = new Worker((window)["scriptPath"] + "forgeAsync.js"));
+        EcRsaOaepAsyncWorker.w.push(wkr = new Worker((window)["scriptPath"] + "forgeAsync.js"));
         wkr.onmessage = function(p1) {
             var o = p1.data;
-            var success = EcRsaOaepAsync.q1[index].shift();
-            var failure = EcRsaOaepAsync.q2[index].shift();
-            if (success != null) {
+            var success = EcRsaOaepAsyncWorker.q1[index].shift();
+            var failure = EcRsaOaepAsyncWorker.q2[index].shift();
+            if ((o)["error"] != null) {
+                if (failure != null) 
+                    failure((o)["error"]);
+            } else if (success != null) {
                 success((o)["result"]);
             }
         };
         wkr.onerror = function(p1) {
-            var success = EcRsaOaepAsync.q1[index].shift();
-            var failure = EcRsaOaepAsync.q2[index].shift();
+            var success = EcRsaOaepAsyncWorker.q1[index].shift();
+            var failure = EcRsaOaepAsyncWorker.q2[index].shift();
             if (failure != null) {
                 failure(p1.toString());
             }
@@ -6959,19 +6931,19 @@ EcRsaOaepAsync = stjs.extend(EcRsaOaepAsync, null, [], function(constructor, pro
      *  message.
      */
     constructor.encrypt = function(pk, plaintext, success, failure) {
-        EcRsaOaepAsync.initWorker();
-        if (!EcRemote.async || EcRsaOaepAsync.w == null) {
+        EcRsaOaepAsyncWorker.initWorker();
+        if (!EcRemote.async || EcRsaOaepAsyncWorker.w == null) {
             success(EcRsaOaep.encrypt(pk, plaintext));
         } else {
-            var worker = EcRsaOaepAsync.rotator++;
-            EcRsaOaepAsync.rotator = EcRsaOaepAsync.rotator % 8;
+            var worker = EcRsaOaepAsyncWorker.rotator++;
+            EcRsaOaepAsyncWorker.rotator = EcRsaOaepAsyncWorker.rotator % 8;
             var o = new Object();
             (o)["pk"] = pk.toPem();
             (o)["text"] = plaintext;
             (o)["cmd"] = "encryptRsaOaep";
-            EcRsaOaepAsync.q1[worker].push(success);
-            EcRsaOaepAsync.q2[worker].push(failure);
-            EcRsaOaepAsync.w[worker].postMessage(o);
+            EcRsaOaepAsyncWorker.q1[worker].push(success);
+            EcRsaOaepAsyncWorker.q2[worker].push(failure);
+            EcRsaOaepAsyncWorker.w[worker].postMessage(o);
         }
     };
     /**
@@ -6989,32 +6961,33 @@ EcRsaOaepAsync = stjs.extend(EcRsaOaepAsync, null, [], function(constructor, pro
      */
     constructor.decrypt = function(ppk, ciphertext, success, failure) {
         if (EcCrypto.caching) {
-            var cacheGet = (EcCrypto.decryptionCache)[ppk.toPem() + ciphertext];
+            var cacheGet = null;
+            cacheGet = (EcCrypto.decryptionCache)[ppk.toPem() + ciphertext];
             if (cacheGet != null) {
                 success(cacheGet);
                 return;
             }
         }
-        EcRsaOaepAsync.initWorker();
-        if (!EcRemote.async || EcRsaOaepAsync.w == null) {
+        EcRsaOaepAsyncWorker.initWorker();
+        if (!EcRemote.async || EcRsaOaepAsyncWorker.w == null) {
             success(EcRsaOaep.decrypt(ppk, ciphertext));
         } else {
-            var worker = EcRsaOaepAsync.rotator++;
-            EcRsaOaepAsync.rotator = EcRsaOaepAsync.rotator % 8;
+            var worker = EcRsaOaepAsyncWorker.rotator++;
+            EcRsaOaepAsyncWorker.rotator = EcRsaOaepAsyncWorker.rotator % 8;
             var o = new Object();
             (o)["ppk"] = ppk.toPem();
             (o)["text"] = ciphertext;
             (o)["cmd"] = "decryptRsaOaep";
             if (EcCrypto.caching) {
-                EcRsaOaepAsync.q1[worker].push(function(p1) {
+                EcRsaOaepAsyncWorker.q1[worker].push(function(p1) {
                     (EcCrypto.decryptionCache)[ppk.toPem() + ciphertext] = p1;
                     success(p1);
                 });
             } else {
-                EcRsaOaepAsync.q1[worker].push(success);
+                EcRsaOaepAsyncWorker.q1[worker].push(success);
             }
-            EcRsaOaepAsync.q2[worker].push(failure);
-            EcRsaOaepAsync.w[worker].postMessage(o);
+            EcRsaOaepAsyncWorker.q2[worker].push(failure);
+            EcRsaOaepAsyncWorker.w[worker].postMessage(o);
         }
     };
     /**
@@ -7031,19 +7004,19 @@ EcRsaOaepAsync = stjs.extend(EcRsaOaepAsync, null, [], function(constructor, pro
      *  message.
      */
     constructor.sign = function(ppk, text, success, failure) {
-        EcRsaOaepAsync.initWorker();
-        if (!EcRemote.async || EcRsaOaepAsync.w == null) {
+        EcRsaOaepAsyncWorker.initWorker();
+        if (!EcRemote.async || EcRsaOaepAsyncWorker.w == null) {
             success(EcRsaOaep.sign(ppk, text));
         } else {
-            var worker = EcRsaOaepAsync.rotator++;
-            EcRsaOaepAsync.rotator = EcRsaOaepAsync.rotator % 8;
+            var worker = EcRsaOaepAsyncWorker.rotator++;
+            EcRsaOaepAsyncWorker.rotator = EcRsaOaepAsyncWorker.rotator % 8;
             var o = new Object();
             (o)["ppk"] = ppk.toPem();
             (o)["text"] = text;
             (o)["cmd"] = "signRsaOaep";
-            EcRsaOaepAsync.q1[worker].push(success);
-            EcRsaOaepAsync.q2[worker].push(failure);
-            EcRsaOaepAsync.w[worker].postMessage(o);
+            EcRsaOaepAsyncWorker.q1[worker].push(success);
+            EcRsaOaepAsyncWorker.q2[worker].push(failure);
+            EcRsaOaepAsyncWorker.w[worker].postMessage(o);
         }
     };
     /**
@@ -7060,19 +7033,19 @@ EcRsaOaepAsync = stjs.extend(EcRsaOaepAsync, null, [], function(constructor, pro
      *  message.
      */
     constructor.signSha256 = function(ppk, text, success, failure) {
-        EcRsaOaepAsync.initWorker();
-        if (!EcRemote.async || EcRsaOaepAsync.w == null) {
+        EcRsaOaepAsyncWorker.initWorker();
+        if (!EcRemote.async || EcRsaOaepAsyncWorker.w == null) {
             success(EcRsaOaep.signSha256(ppk, text));
         } else {
-            var worker = EcRsaOaepAsync.rotator++;
-            EcRsaOaepAsync.rotator = EcRsaOaepAsync.rotator % 8;
+            var worker = EcRsaOaepAsyncWorker.rotator++;
+            EcRsaOaepAsyncWorker.rotator = EcRsaOaepAsyncWorker.rotator % 8;
             var o = new Object();
             (o)["ppk"] = ppk.toPem();
             (o)["text"] = text;
             (o)["cmd"] = "signSha256RsaOaep";
-            EcRsaOaepAsync.q1[worker].push(success);
-            EcRsaOaepAsync.q2[worker].push(failure);
-            EcRsaOaepAsync.w[worker].postMessage(o);
+            EcRsaOaepAsyncWorker.q1[worker].push(success);
+            EcRsaOaepAsyncWorker.q2[worker].push(failure);
+            EcRsaOaepAsyncWorker.w[worker].postMessage(o);
         }
     };
     /**
@@ -7090,20 +7063,20 @@ EcRsaOaepAsync = stjs.extend(EcRsaOaepAsync, null, [], function(constructor, pro
      *  message.
      */
     constructor.verify = function(pk, text, signature, success, failure) {
-        EcRsaOaepAsync.initWorker();
-        if (!EcRemote.async || EcRsaOaepAsync.w == null) {
+        EcRsaOaepAsyncWorker.initWorker();
+        if (!EcRemote.async || EcRsaOaepAsyncWorker.w == null) {
             success(EcRsaOaep.verify(pk, text, signature));
         } else {
-            var worker = EcRsaOaepAsync.rotator++;
-            EcRsaOaepAsync.rotator = EcRsaOaepAsync.rotator % 8;
+            var worker = EcRsaOaepAsyncWorker.rotator++;
+            EcRsaOaepAsyncWorker.rotator = EcRsaOaepAsyncWorker.rotator % 8;
             var o = new Object();
             (o)["pk"] = pk.toPem();
             (o)["text"] = text;
             (o)["signature"] = signature;
             (o)["cmd"] = "verifyRsaOaep";
-            EcRsaOaepAsync.q1[worker].push(success);
-            EcRsaOaepAsync.q2[worker].push(failure);
-            EcRsaOaepAsync.w[worker].postMessage(o);
+            EcRsaOaepAsyncWorker.q1[worker].push(success);
+            EcRsaOaepAsyncWorker.q2[worker].push(failure);
+            EcRsaOaepAsyncWorker.w[worker].postMessage(o);
         }
     };
 }, {w: {name: "Array", arguments: [{name: "Worker", arguments: ["Object"]}]}, q1: {name: "Array", arguments: [{name: "Array", arguments: ["Callback1"]}]}, q2: {name: "Array", arguments: [{name: "Array", arguments: ["Callback1"]}]}}, {});
@@ -7111,12 +7084,12 @@ EcRsaOaepAsync = stjs.extend(EcRsaOaepAsync, null, [], function(constructor, pro
  *  Asynchronous implementation of {{#crossLink
  *  "EcAesCtr"}}EcAesCtr{{/crossLink}}. Uses web workers and assumes 8 workers.
  * 
+ *  @author fritz.ray@eduworks.com
  *  @class EcAesCtrAsync
  *  @module com.eduworks.ec
- *  @author fritz.ray@eduworks.com
  */
-var EcAesCtrAsync = function() {};
-EcAesCtrAsync = stjs.extend(EcAesCtrAsync, null, [], function(constructor, prototype) {
+var EcAesCtrAsyncWorker = function() {};
+EcAesCtrAsyncWorker = stjs.extend(EcAesCtrAsyncWorker, null, [], function(constructor, prototype) {
     constructor.rotator = 0;
     constructor.w = null;
     constructor.q1 = null;
@@ -7128,33 +7101,36 @@ EcAesCtrAsync = stjs.extend(EcAesCtrAsync, null, [], function(constructor, proto
         if (!EcRemote.async) {
             return;
         }
-        if (EcAesCtrAsync.w != null) {
+        if (EcAesCtrAsyncWorker.w != null) {
             return;
         }
-        EcAesCtrAsync.rotator = 0;
-        EcAesCtrAsync.q1 = new Array();
-        EcAesCtrAsync.q2 = new Array();
-        EcAesCtrAsync.w = new Array();
+        EcAesCtrAsyncWorker.rotator = 0;
+        EcAesCtrAsyncWorker.q1 = new Array();
+        EcAesCtrAsyncWorker.q2 = new Array();
+        EcAesCtrAsyncWorker.w = new Array();
         for (var index = 0; index < 8; index++) {
-            EcAesCtrAsync.createWorker(index);
+            EcAesCtrAsyncWorker.createWorker(index);
         }
     };
     constructor.createWorker = function(index) {
-        EcAesCtrAsync.q1.push(new Array());
-        EcAesCtrAsync.q2.push(new Array());
+        EcAesCtrAsyncWorker.q1.push(new Array());
+        EcAesCtrAsyncWorker.q2.push(new Array());
         var wkr;
-        EcAesCtrAsync.w.push(wkr = new Worker((window)["scriptPath"] + "forgeAsync.js"));
+        EcAesCtrAsyncWorker.w.push(wkr = new Worker((window)["scriptPath"] + "forgeAsync.js"));
         wkr.onmessage = function(p1) {
             var o = p1.data;
-            var success = EcAesCtrAsync.q1[index].shift();
-            var failure = EcAesCtrAsync.q2[index].shift();
-            if (success != null) {
+            var success = EcAesCtrAsyncWorker.q1[index].shift();
+            var failure = EcAesCtrAsyncWorker.q2[index].shift();
+            if ((o)["error"] != null) {
+                if (failure != null) 
+                    failure((o)["error"]);
+            } else if (success != null) {
                 success((o)["result"]);
             }
         };
         wkr.onerror = function(p1) {
-            var success = EcAesCtrAsync.q1[index].shift();
-            var failure = EcAesCtrAsync.q2[index].shift();
+            var success = EcAesCtrAsyncWorker.q1[index].shift();
+            var failure = EcAesCtrAsyncWorker.q2[index].shift();
             if (failure != null) {
                 failure(p1.toString());
             }
@@ -7164,76 +7140,268 @@ EcAesCtrAsync = stjs.extend(EcAesCtrAsync, null, [], function(constructor, proto
      *  Asynchronous form of {{#crossLink
      *  "EcAesCtr/encrypt:method"}}EcAesCtr.encrypt{{/crossLink}}
      * 
+     *  @param {string}           plaintext Text to encrypt.
+     *  @param {string}           secret Secret to use to encrypt.
+     *  @param {string}           iv Initialization Vector to use to encrypt.
+     *  @param {function(string)} success Success method, result is Base64
+     *                            encoded Ciphertext.
+     *  @param {function(string)} failure Failure method, parameter is error
+     *                            message.
      *  @method encrypt
      *  @static
-     *  @param {string} plaintext Text to encrypt.
-     *  @param {string} secret Secret to use to encrypt.
-     *  @param {string} iv Initialization Vector to use to encrypt.
-     *  @param {function(string)} success Success method, result is Base64
-     *  encoded Ciphertext.
-     *  @param {function(string)} failure Failure method, parameter is error
-     *  message.
      */
     constructor.encrypt = function(plaintext, secret, iv, success, failure) {
-        EcAesCtrAsync.initWorker();
-        if (!EcRemote.async || EcAesCtrAsync.w == null) {
+        EcAesCtrAsyncWorker.initWorker();
+        if (!EcRemote.async || EcAesCtrAsyncWorker.w == null) {
             success(EcAesCtr.encrypt(plaintext, secret, iv));
         } else {
-            var worker = EcAesCtrAsync.rotator++;
-            EcAesCtrAsync.rotator = EcAesCtrAsync.rotator % 8;
+            var worker = EcAesCtrAsyncWorker.rotator++;
+            EcAesCtrAsyncWorker.rotator = EcAesCtrAsyncWorker.rotator % 8;
             var o = new Object();
             (o)["secret"] = secret;
             (o)["iv"] = iv;
             (o)["text"] = plaintext;
             (o)["cmd"] = "encryptAesCtr";
-            EcAesCtrAsync.q1[worker].push(success);
-            EcAesCtrAsync.q2[worker].push(failure);
-            EcAesCtrAsync.w[worker].postMessage(o);
+            EcAesCtrAsyncWorker.q1[worker].push(success);
+            EcAesCtrAsyncWorker.q2[worker].push(failure);
+            EcAesCtrAsyncWorker.w[worker].postMessage(o);
         }
     };
     /**
      *  Asynchronous form of {{#crossLink
      *  "EcAesCtr/decrypt:method"}}EcAesCtr.decrypt{{/crossLink}}
      * 
+     *  @param {string}           ciphertext Text to decrypt.
+     *  @param {string}           secret Secret to use to decrypt.
+     *  @param {string}           iv Initialization Vector to use to decrypt.
+     *  @param {function(string)} success Success method, result is Plaintext
+     *                            with no encoding.
+     *  @param {function(string)} failure Failure method, parameter is error
+     *                            message.
      *  @method decrypt
      *  @static
-     *  @param {string} ciphertext Text to decrypt.
-     *  @param {string} secret Secret to use to decrypt.
-     *  @param {string} iv Initialization Vector to use to decrypt.
-     *  @param {function(string)} success Success method, result is Plaintext
-     *  with no encoding.
-     *  @param {function(string)} failure Failure method, parameter is error
-     *  message.
      */
     constructor.decrypt = function(ciphertext, secret, iv, success, failure) {
         if (EcCrypto.caching) {
-            var cacheGet = (EcCrypto.decryptionCache)[secret + iv + ciphertext];
+            var cacheGet = null;
+            cacheGet = (EcCrypto.decryptionCache)[secret + iv + ciphertext];
             if (cacheGet != null) {
                 success(cacheGet);
                 return;
             }
         }
-        EcAesCtrAsync.initWorker();
-        if (!EcRemote.async || EcAesCtrAsync.w == null) {
+        EcAesCtrAsyncWorker.initWorker();
+        if (!EcRemote.async || EcAesCtrAsyncWorker.w == null) {
             success(EcAesCtr.decrypt(ciphertext, secret, iv));
         } else {
-            var worker = EcAesCtrAsync.rotator++;
-            EcAesCtrAsync.rotator = EcAesCtrAsync.rotator % 8;
+            var worker = EcAesCtrAsyncWorker.rotator++;
+            EcAesCtrAsyncWorker.rotator = EcAesCtrAsyncWorker.rotator % 8;
             var o = new Object();
             (o)["secret"] = secret;
             (o)["iv"] = iv;
             (o)["text"] = ciphertext;
             (o)["cmd"] = "decryptAesCtr";
             if (EcCrypto.caching) {
-                EcAesCtrAsync.q1[worker].push(function(p1) {
+                EcAesCtrAsyncWorker.q1[worker].push(function(p1) {
                     (EcCrypto.decryptionCache)[secret + iv + ciphertext] = p1;
                     success(p1);
                 });
             } else {
-                EcAesCtrAsync.q1[worker].push(success);
+                EcAesCtrAsyncWorker.q1[worker].push(success);
             }
-            EcAesCtrAsync.q2[worker].push(failure);
-            EcAesCtrAsync.w[worker].postMessage(o);
+            EcAesCtrAsyncWorker.q2[worker].push(failure);
+            EcAesCtrAsyncWorker.w[worker].postMessage(o);
         }
     };
 }, {w: {name: "Array", arguments: [{name: "Worker", arguments: ["Object"]}]}, q1: {name: "Array", arguments: [{name: "Array", arguments: ["Callback1"]}]}, q2: {name: "Array", arguments: [{name: "Array", arguments: ["Callback1"]}]}}, {});
+var EcRsaOaepAsync = function() {};
+EcRsaOaepAsync = stjs.extend(EcRsaOaepAsync, null, [], function(constructor, prototype) {
+    constructor.encrypt = function(pk, text, success, failure) {
+        if (EcRemote.async == false) {
+            success(EcRsaOaep.encrypt(pk, text));
+            return;
+        }
+        if (window.crypto.subtle == null) {
+            EcRsaOaepAsyncWorker.encrypt(pk, text, success, failure);
+            return;
+        }
+        var keyUsages = new Array();
+        keyUsages.push("encrypt");
+        var algorithm = new AlgorithmIdentifier();
+        algorithm.name = "RSA-OAEP";
+        algorithm.hash = "SHA-1";
+        if (pk.key == null) 
+            window.crypto.subtle.importKey("jwk", pk.toJwk(), algorithm, false, keyUsages).then(function(key) {
+                pk.key = key;
+                window.crypto.subtle.encrypt(algorithm, key, str2ab(text)).then(function(p1) {
+                    success(base64.encode(p1));
+                });
+            });
+         else 
+            window.crypto.subtle.encrypt(algorithm, pk.key, str2ab(text)).then(function(p1) {
+                success(base64.encode(p1));
+            });
+    };
+    constructor.decrypt = function(ppk, text, success, failure) {
+        if (EcCrypto.caching) {
+            var cacheGet = null;
+            cacheGet = (EcCrypto.decryptionCache)[ppk.toPem() + text];
+            if (cacheGet != null) {
+                success(cacheGet);
+                return;
+            }
+        }
+        if (EcRemote.async == false) {
+            success(EcRsaOaep.decrypt(ppk, text));
+            return;
+        }
+        if (window.crypto.subtle == null) {
+            EcRsaOaepAsyncWorker.decrypt(ppk, text, success, failure);
+            return;
+        }
+        var keyUsages = new Array();
+        keyUsages.push("decrypt");
+        var algorithm = new AlgorithmIdentifier();
+        algorithm.name = "RSA-OAEP";
+        algorithm.hash = "SHA-1";
+        if (ppk.key == null) 
+            window.crypto.subtle.importKey("jwk", ppk.toJwk(), algorithm, false, keyUsages).then(function(key) {
+                ppk.key = key;
+                window.crypto.subtle.decrypt(algorithm, key, base64.decode(text)).then(function(p1) {
+                    success(ab2str(p1));
+                });
+            });
+         else 
+            window.crypto.subtle.decrypt(algorithm, ppk.key, base64.decode(text)).then(function(p1) {
+                success(ab2str(p1));
+            });
+    };
+    constructor.sign = function(ppk, text, success, failure) {
+        if (EcRemote.async == false) {
+            success(EcRsaOaep.sign(ppk, text));
+            return;
+        }
+        if (window.crypto.subtle == null) {
+            EcRsaOaepAsyncWorker.sign(ppk, text, success, failure);
+            return;
+        }
+        var keyUsages = new Array();
+        keyUsages.push("sign");
+        var algorithm = new AlgorithmIdentifier();
+        algorithm.name = "RSASSA-PKCS1-v1_5";
+        algorithm.hash = "SHA-1";
+        if (ppk.signKey == null) 
+            window.crypto.subtle.importKey("jwk", ppk.toJwk(), algorithm, false, keyUsages).then(function(key) {
+                ppk.signKey = key;
+                window.crypto.subtle.sign(algorithm, key, str2ab(text)).then(function(p1) {
+                    success(base64.encode(p1));
+                });
+            });
+         else 
+            window.crypto.subtle.sign(algorithm, ppk.signKey, str2ab(text)).then(function(p1) {
+                success(base64.encode(p1));
+            });
+    };
+    constructor.signSha256 = function(ppk, text, success, failure) {
+        if (EcRemote.async == false) {
+            success(EcRsaOaep.signSha256(ppk, text));
+            return;
+        }
+        if (window.crypto.subtle == null) {
+            EcRsaOaepAsyncWorker.sign(ppk, text, success, failure);
+            return;
+        }
+        var keyUsages = new Array();
+        keyUsages.push("sign");
+        var algorithm = new AlgorithmIdentifier();
+        algorithm.name = "RSASSA-PKCS1-v1_5";
+        algorithm.hash = "SHA-256";
+        if (ppk.signKey == null) 
+            window.crypto.subtle.importKey("jwk", ppk.toJwk(), algorithm, false, keyUsages).then(function(key) {
+                ppk.signKey = key;
+                window.crypto.subtle.sign(algorithm, key, str2ab(text)).then(function(p1) {
+                    success(base64.encode(p1));
+                });
+            });
+         else 
+            window.crypto.subtle.sign(algorithm, ppk.signKey, str2ab(text)).then(function(p1) {
+                success(base64.encode(p1));
+            });
+    };
+    constructor.verify = function(pk, text, signature, success, failure) {
+        if (EcRemote.async == false) {
+            success(EcRsaOaep.verify(pk, text, signature));
+            return;
+        }
+        if (window.crypto.subtle == null) {
+            EcRsaOaepAsyncWorker.verify(pk, text, signature, success, failure);
+            return;
+        }
+        var keyUsages = new Array();
+        keyUsages.push("verify");
+        var algorithm = new AlgorithmIdentifier();
+        algorithm.name = "RSASSA-PKCS1-v1_5";
+        algorithm.hash = "SHA-1";
+        if (pk.signKey == null) 
+            window.crypto.subtle.importKey("jwk", pk.toJwk(), algorithm, false, keyUsages).then(function(key) {
+                pk.signKey = key;
+                window.crypto.subtle.verify(algorithm, key, base64.decode(signature), str2ab(text)).then(function(p1) {
+                    success(p1);
+                });
+            });
+         else 
+            window.crypto.subtle.verify(algorithm, pk.signKey, base64.decode(signature), str2ab(text)).then(function(p1) {
+                success(p1);
+            });
+    };
+}, {}, {});
+var EcAesCtrAsync = function() {};
+EcAesCtrAsync = stjs.extend(EcAesCtrAsync, null, [], function(constructor, prototype) {
+    constructor.encrypt = function(text, secret, iv, success, failure) {
+        if (window.crypto.subtle == null) {
+            EcAesCtrAsyncWorker.encrypt(text, secret, iv, success, failure);
+            return;
+        }
+        var keyUsages = new Array();
+        keyUsages.push("encrypt", "decrypt");
+        var algorithm = new AlgorithmIdentifier();
+        algorithm.name = "AES-CTR";
+        algorithm.counter = base64.decode(iv);
+        algorithm.length = 128;
+        var data;
+        data = str2ab(text);
+        window.crypto.subtle.importKey("raw", base64.decode(secret), algorithm, false, keyUsages).then(function(key) {
+            var p = window.crypto.subtle.encrypt(algorithm, key, data);
+            p.then(function(p1) {
+                success(base64.encode(p1));
+            });
+        });
+    };
+    constructor.decrypt = function(text, secret, iv, success, failure) {
+        if (EcCrypto.caching) {
+            var cacheGet = (EcCrypto.decryptionCache)[secret + iv + text];
+            if (cacheGet != null) {
+                success(cacheGet);
+                return;
+            }
+        }
+        if (window.crypto.subtle == null) {
+            EcAesCtrAsyncWorker.decrypt(text, secret, iv, success, failure);
+            return;
+        }
+        var keyUsages = new Array();
+        keyUsages.push("encrypt", "decrypt");
+        var algorithm = new AlgorithmIdentifier();
+        algorithm.name = "AES-CTR";
+        algorithm.counter = base64.decode(iv);
+        algorithm.length = 128;
+        var data;
+        data = base64.decode(text);
+        window.crypto.subtle.importKey("raw", base64.decode(secret), algorithm, false, keyUsages).then(function(key) {
+            var p = window.crypto.subtle.decrypt(algorithm, key, data);
+            p.then(function(p1) {
+                success(ab2str(p1));
+            });
+        });
+    };
+}, {}, {});

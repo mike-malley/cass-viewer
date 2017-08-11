@@ -73,7 +73,10 @@ ViewManager = stjs.extend(ViewManager, null, [], function(constructor, prototype
     constructor.showView = function(view, containerId, callback) {
         var htmlLocation = view.getHtmlLocation();
         if (htmlLocation != null) {
+            var oldView = ViewManager.getView(containerId);
             ViewManager.setView(containerId, view);
+            if (oldView != null) 
+                oldView.onClose();
             $(containerId).load(htmlLocation, null, function(p1, p2, p3) {
                 view.display(containerId);
                 if (callback != null) 
@@ -92,6 +95,12 @@ ViewManager = stjs.extend(ViewManager, null, [], function(constructor, prototype
      */
     constructor.hideView = function(containerId) {
         $(containerId).addClass("hide");
+    };
+    constructor.destroyView = function(containerId) {
+        if (ViewManager.getView(containerId) == null) 
+            return;
+        ViewManager.getView(containerId).onClose();
+        delete ViewManager.viewMap[containerId];
     };
 }, {viewMap: {name: "Map", arguments: [null, "EcView"]}}, {});
 /**
@@ -207,81 +216,33 @@ EcView = stjs.extend(EcView, null, [], function(constructor, prototype) {
         return null;
     };
     /**
-     *  Returns the URL parameters of the browser window
-     *  
+     *  Event that is called when the view is deleted, removed, or found to have no applicable selector.
+     *  Called upon screen change or when replacing a view with the same selector.
+     * 
      *  @memberOf EcView
-     *  @method getUrlParameters
-     *  @return {Map<String, String>}
-     *  			URL Parameters in a map
+     *  @method onClose
+     *  @return {Boolean} True if the view finished cleaning up after itself. False otherwise.
      */
-    prototype.getUrlParameters = function() {
-        return EcView.urlParameters();
+    prototype.onClose = function() {
+        return true;
     };
     /**
-     *  Returns the URL Query parameters of the browser window
-     *  
+     *  Display this alert on the view.
+     * 
      *  @memberOf EcView
-     *  @method urlParameters
-     *  @static
-     *  @return {Map<String, String>}
-     *  			URL Query Parameters in a map
+     *  @method displayAlert
+     *  @param {String} Error to display.
+     *  @param {String} Type of error.
      */
-    constructor.queryParams = function() {
-        if (window.document.location.search == null) 
-            return new Object();
-        var hashSplit = (window.document.location.search.split("?"));
-        if (hashSplit.length > 1) {
-            var o = null;
-            var params = (o = new Object());
-            var paramString = hashSplit[1];
-            var parts = (paramString).split("&");
-            for (var i = 0; i < parts.length; i++) 
-                params[parts[i].split("=")[0]] = parts[i].replace(parts[i].split("=")[0] + "=", "");
-            return o;
-        }
-        return new Object();
-    };
+    prototype.displayAlert = function(err, type) {};
     /**
-     *  Returns the URL Hash parameters of the browser window
-     *  
+     *  Clear the alert.
+     * 
      *  @memberOf EcView
-     *  @method urlParameters
-     *  @static
-     *  @return {Map<String, String>}
-     *  			URL Hash Parameters in a map
+     *  @method clearAlert
+     *  @param {String} Type of error.
      */
-    constructor.hashParams = function() {
-        if (window.document.location.hash == null) 
-            return new Object();
-        var hashSplit = (window.document.location.hash.split("?"));
-        if (hashSplit.length > 1) {
-            var o = null;
-            var params = (o = new Object());
-            var paramString = hashSplit[1];
-            var parts = (paramString).split("&");
-            for (var i = 0; i < parts.length; i++) 
-                params[parts[i].split("=")[0]] = parts[i].replace(parts[i].split("=")[0] + "=", "");
-            return o;
-        }
-        return new Object();
-    };
-    /**
-     *  Returns the URL parameters of the browser window
-     *  
-     *  @memberOf EcView
-     *  @method urlParameters
-     *  @static
-     *  @return {Map<String, String>}
-     *  			URL Parameters in a map
-     */
-    constructor.urlParameters = function() {
-        var params = EcView.hashParams();
-        var queryParams = EcView.queryParams();
-        for (var key in (queryParams)) {
-            (params)[key] = (queryParams)[key];
-        }
-        return params;
-    };
+    prototype.clearAlert = function(type) {};
 }, {}, {});
 /**
  *  STJS Wrapper for the Browser Native History Object
@@ -291,15 +252,16 @@ EcView = stjs.extend(EcView, null, [], function(constructor, prototype) {
 var HistoryObject = function() {};
 HistoryObject = stjs.extend(HistoryObject, null, [], function(constructor, prototype) {
     prototype.name = null;
-}, {}, {});
+    prototype.parameters = null;
+}, {parameters: "Object"}, {});
 /**
- *  View Manager sub class that manages loading "modal"s and has a few helper functions to make sure that 
+ *  View Manager sub class that manages loading "modal"s and has a few helper functions to make sure that
  *  they work properly
- *  
+ * 
  *  @module com.eduworks.ec.ui
  *  @class ModalManager
  *  @extends ViewManager
- *  
+ * 
  *  @author devlin.junker@eduworks.com
  */
 var ModalManager = function() {
@@ -308,22 +270,22 @@ var ModalManager = function() {
 ModalManager = stjs.extend(ModalManager, ViewManager, [], function(constructor, prototype) {
     /**
      *  DOM Selector (ID) of the container to display Modal's in
-     *  
+     * 
      *  @property MODAL_CONTAINER_ID
      *  @type String
      */
     constructor.MODAL_CONTAINER_ID = "#modalContainer";
     /**
-     *  Application flag that is set when a modal is open, so we can check from the application whether we're in a 
+     *  Application flag that is set when a modal is open, so we can check from the application whether we're in a
      *  modal or not.
-     *  
+     * 
      *  @property inModal
      *  @type boolean
      */
     constructor.inModal = false;
     /**
      *  Retrieves the current view that corresponds to the Modal Container Element (Should be a Modal)
-     *  
+     * 
      *  @memberOf ModalManager
      *  @method getCurrentModal
      *  @static
@@ -335,7 +297,7 @@ ModalManager = stjs.extend(ModalManager, ViewManager, [], function(constructor, 
     };
     /**
      *  Sets the current modal and then shows it by calling the modals display function
-     *  
+     * 
      *  @memberOf ModalManager
      *  @method showModal
      *  @static
@@ -367,7 +329,7 @@ ModalManager = stjs.extend(ModalManager, ViewManager, [], function(constructor, 
     };
     /**
      *  Hides the modal container and returns to the screen or overlay that was being displayed beneath it
-     *  
+     * 
      *  @memberOf ModalManager
      *  @method hideModal
      *  @static
@@ -379,9 +341,10 @@ ModalManager = stjs.extend(ModalManager, ViewManager, [], function(constructor, 
 }, {viewMap: {name: "Map", arguments: [null, "EcView"]}}, {});
 (function() {
     $(ModalManager.MODAL_CONTAINER_ID).one("closed.zf.reveal", function(arg0, arg1) {
-        if (ModalManager.getCurrentModal().onClose != null) 
-            ModalManager.getCurrentModal().onClose();
-        return true;
+        var result = ModalManager.getCurrentModal().onClose();
+        if (result == null || undefined == result) 
+            return true;
+        return result;
     });
 })();
 /**
@@ -406,14 +369,6 @@ EcModal = stjs.extend(EcModal, EcView, [], function(constructor, prototype) {
      */
     prototype.modalSize = "small";
     /**
-     *  Function to be invoked when the modal is closed, can be overriden or left blank if nothing
-     *  needs to happen on the modal close 
-     *  
-     *  @property onClose
-     *  @type Callback0
-     */
-    prototype.onClose = null;
-    /**
      *  
      *  @memberOf EcModal
      *  @method getModalSize
@@ -421,7 +376,7 @@ EcModal = stjs.extend(EcModal, EcView, [], function(constructor, prototype) {
      *  @return tiny, small, medium, large, or full depending on how large the modal should be
      */
     prototype.getModalSize = function() {};
-}, {onClose: "Callback0"}, {});
+}, {}, {});
 /**
  *  Subclass of view that is specific for a screen, providing a display name that
  *  will be shown in the URL bar and that can be used on startup to check if the
@@ -471,37 +426,48 @@ EcScreen = stjs.extend(EcScreen, EcView, [], function(constructor, prototype) {
         }
     };
     prototype.fillInnerString = function(scope, dataObj, key) {
+        if (key.contains("/") || key.contains(":") || key.contains("@")) 
+            return;
         var a = (dataObj);
         var v = a[key];
         var textTypes = "[ec-field='" + key + "']";
         if ((typeof v) == "string") {
-            var s = v;
             var textFieldTypes = scope.find(textTypes);
             var attrFieldTypes = scope.find("[ec-attr-" + key + "]");
             textFieldTypes.text(v).val(v);
-            attrFieldTypes.attr(key, v);
-            attrFieldTypes.attr(key.toLowerCase(), v);
+            var attrValue = attrFieldTypes.attr("ec-attr-" + key + "");
+            var writeKey = key;
+            if (attrValue != null && attrValue != "") 
+                writeKey = attrValue;
+            attrFieldTypes.attr(writeKey, v);
+            attrFieldTypes.attr(writeKey.toLowerCase(), v);
             if (scope.is("[ec-field='" + key + "']")) 
                 scope.text(v);
             if (scope.is("[ec-attr-" + key + "]")) {
-                scope.attr(key, v);
-                scope.attr(key.toLowerCase(), v);
+                scope.attr(writeKey, v);
+                scope.attr(writeKey.toLowerCase(), v);
             }
         }
         if ((typeof v) == "function") {
             if ((v)["length"] == 0) {
                 var textFieldTypes = scope.find(textTypes);
                 var attrFieldTypes = scope.find("[ec-attr-" + key + "]");
+                var attrValue = scope.attr("ec-attr-" + key + "");
+                var writeKey = key;
+                if (attrValue != null && attrValue != "") 
+                    writeKey = attrValue;
                 if (textFieldTypes.length + attrFieldTypes.length > 0) {
                     v = (v).apply(dataObj, new Array(0));
                     textFieldTypes.text(v).val(v);
-                    attrFieldTypes.attr(key, v);
-                    attrFieldTypes.attr(key.toLowerCase(), v);
+                    attrFieldTypes.attr(writeKey, v);
+                    attrFieldTypes.attr(writeKey.toLowerCase(), v);
                 }
             }
         }
     };
     prototype.fillInnerStringReferences = function(scope, dataObj, key) {
+        if (key.contains("/") || key.contains(":") || key.contains("@")) 
+            return;
         var a = (dataObj);
         var v = a[key];
         if ((typeof v) == "string") {
@@ -517,6 +483,8 @@ EcScreen = stjs.extend(EcScreen, EcView, [], function(constructor, prototype) {
         if ((typeof v) == "function") {}
     };
     prototype.fillInnerArray = function(scope, dataObj, key) {
+        if (key.contains("/") || key.contains(":") || key.contains("@")) 
+            return;
         var props = (dataObj);
         var v = props[key];
         if (EcArray.isArray(v)) {
@@ -532,7 +500,7 @@ EcScreen = stjs.extend(EcScreen, EcView, [], function(constructor, prototype) {
     };
     prototype.fillInnerArrayContainer = function(scope, dataObj, key, props, container, array, i) {
         var arrayValue = array[i];
-        if (arrayValue.toLowerCase().startsWith("http")) {
+        if ((typeof arrayValue) == "string" && arrayValue.toLowerCase().startsWith("http")) {
             var p1 = EcRepository.getBlocking(arrayValue);
             if (this.shouldFillInnerArray(props, container, p1)) {
                 var newContainer = null;
@@ -544,6 +512,9 @@ EcScreen = stjs.extend(EcScreen, EcView, [], function(constructor, prototype) {
                     this.fillInnerArray(newContainer, dataObj, k2);
                 }
             }
+        } else if (EcObject.isObject(arrayValue)) {
+            var c = this.autoAppend(scope, key);
+            this.autoFill(c, arrayValue);
         } else if (arrayValue.trim().startsWith("{")) {
             var c = this.autoAppend(scope, key);
             this.autoFill(c, JSON.parse(arrayValue));
@@ -583,6 +554,8 @@ EcScreen = stjs.extend(EcScreen, EcView, [], function(constructor, prototype) {
         from.find("[ec-template='" + template + "']").remove();
     };
     prototype.autoAppend = function(from, template) {
+        if ((this.nameToTemplate)[template] == null) 
+            return from;
         if (from.is("[ec-container~='" + template + "']")) {
             return from.append((this.nameToTemplate)[template]).children().last();
         }
@@ -605,14 +578,13 @@ EcScreen = stjs.extend(EcScreen, EcView, [], function(constructor, prototype) {
 /**
  *  View Manager child class that manages loading "screen"s and saving screen history. This is the main view type
  *  in an application and represents a view that takes up (mostly) the entire browser page. History is tracked in the
- *  session, so  when the back button is pressed, the application will load the previous screen with any data that 
+ *  session, so  when the back button is pressed, the application will load the previous screen with any data that
  *  was associated with it.
- *  
+ * 
+ *  @author devlin.junker@eduworks.com
  *  @module com.eduworks.ec.ui
  *  @class Screenmanager
  *  @extends ViewManager
- *  
- *  @author devlin.junker@eduworks.com
  */
 var ScreenManager = function() {
     ViewManager.call(this);
@@ -620,14 +592,14 @@ var ScreenManager = function() {
 ScreenManager = stjs.extend(ScreenManager, ViewManager, [], function(constructor, prototype) {
     /**
      *  DOM Selector (ID) of the Screen Container that will display all of the screen views
-     *  
+     * 
      *  @property SCREEN_CONTAINER_ID
      *  @type String
      */
     constructor.SCREEN_CONTAINER_ID = "#screenContainer";
     /**
      *  Array to track the history of the current session
-     *  
+     * 
      *  @property myHistory
      *  @type HistoryClosure[]
      */
@@ -646,15 +618,15 @@ ScreenManager = stjs.extend(ScreenManager, ViewManager, [], function(constructor
     /**
      *  Screen to be set by application on application startup, dictates what the screen should be if the startup
      *  Screen hasn't been set
-     *  
+     * 
      *  @property defaultScreen
      *  @type EcScreen
      */
     constructor.defaultScreen = null;
     /**
-     *  Screen to be set by application if it notices that a certain screen should be loaded on startup that is 
+     *  Screen to be set by application if it notices that a certain screen should be loaded on startup that is
      *  different from the default Screen
-     *  
+     * 
      *  @property startupScreen
      *  @type EcScreen
      */
@@ -662,14 +634,14 @@ ScreenManager = stjs.extend(ScreenManager, ViewManager, [], function(constructor
     /**
      *  Callback to be invoked once the application has started and the first screen has been completely loaded
      *  and displayed
-     *  
+     * 
      *  @property startupCallback
      *  @type Callback1<String>
      */
     constructor.startupCallback = null;
     /**
      *  Callback invoked during a history load (used in Overlay Manager to open an overlay if it was last history view)
-     *  
+     * 
      *  @property loadHistoryCallback
      *  @type Callback2<EcScreen, Object>
      */
@@ -678,31 +650,31 @@ ScreenManager = stjs.extend(ScreenManager, ViewManager, [], function(constructor
      *  Array of callbacks that will compare any markers saved in the browser to see if a specific startup screen
      *  should be set. These callbacks should be defined in the screen Java implementation to check if the screen
      *  should be loaded.
-     *  
+     * 
      *  @property startupScreenCallbacks
      *  @type Callback0[]
      */
     constructor.startupScreenCallbacks = [];
     /**
      *  Function to add startup screen callbacks to the array of callbacks
-     *  
+     * 
+     *  @param {Callback0} callback
+     *                     callback to add, all callbacks will be invoked on the application startup
      *  @memberOf ScreenManager
      *  @method addStartupScreenCallback
      *  @static
-     *  @param {Callback0} callback
-     *  			callback to add, all callbacks will be invoked on the application startup
      */
     constructor.addStartupScreenCallback = function(callback) {
         ScreenManager.startupScreenCallbacks.unshift(callback);
     };
     /**
      *  Retrieves the current view that corresponds to the Screen Container Element (Should be a screen)
-     *  
+     * 
+     *  @return {EcScreen}
+     *  EcScreen instance that is currently being shown in the screen container element
      *  @memberOf ScreenManager
      *  @method getCurrentScreen
      *  @static
-     *  @return {EcScreen}
-     *  		EcScreen instance that is currently being shown in the screen container element
      */
     constructor.getCurrentScreen = function() {
         return ViewManager.getView(ScreenManager.SCREEN_CONTAINER_ID);
@@ -712,12 +684,12 @@ ScreenManager = stjs.extend(ScreenManager, ViewManager, [], function(constructor
      *  Also sets up some code to run during the application load, that calls the startup callbacks
      *  to see if there is a startup screen different than the defaultScreen, then displays it or the
      *  defaultScreen depending on the results
-     *  
+     * 
+     *  @param {EcPage} page
+     *                  The default screen that will be displayed if no startup screen is defined during load
      *  @memberOf ScreenManager
      *  @method setDefaultScreen
      *  @static
-     *  @param {EcPage} page
-     *  			The default screen that will be displayed if no startup screen is defined during load
      */
     constructor.setDefaultScreen = function(page) {
         ScreenManager.defaultScreen = page;
@@ -742,7 +714,7 @@ ScreenManager = stjs.extend(ScreenManager, ViewManager, [], function(constructor
                     }
                 }
                 ScreenManager.replaceHistory(ScreenManager.startupScreen, ScreenManager.SCREEN_CONTAINER_ID, params);
-                ViewManager.showView(ScreenManager.startupScreen, ScreenManager.SCREEN_CONTAINER_ID, function() {
+                ScreenManager.showScreen(ScreenManager.startupScreen, ScreenManager.SCREEN_CONTAINER_ID, function() {
                     ($(ScreenManager.SCREEN_CONTAINER_ID)).foundation();
                 });
                 return true;
@@ -762,26 +734,25 @@ ScreenManager = stjs.extend(ScreenManager, ViewManager, [], function(constructor
     /**
      *  Set's the current screen, then show's it by calling the display function. Depending on the
      *  addHistory flag, will add the page passed in to the history array, tracking session page history
-     *  
+     * 
+     *  @param {EcScreen}  page
+     *                     The screen to set as current and display
+     *  @param {Callback0} callback
+     *                     Function to invoke after the page has been displayed and foundation has been set up on the new HTML
+     *  @param {Object}    params
+     *                     URL parameters to set when the screen changes
+     *  @param {boolean}   addHistory
+     *                     Flag for whether to store this page in the history array
      *  @memberOf ScreenManager
      *  @method changeScreen
      *  @static
-     *  @param {EcScreen} page
-     *  			The screen to set as current and display
-     *  @param {Callback0} callback
-     *  			Function to invoke after the page has been displayed and foundation has been set up on the new HTML
-     *  @param {Object} params
-     *  			URL parameters to set when the screen changes
-     *  @param {boolean} addHistory
-     *  			Flag for whether to store this page in the history array
-     *  
      */
     constructor.changeScreen = function(page, callback, params, addHistory) {
         if (addHistory == null) 
             addHistory = true;
         if (addHistory) 
             ScreenManager.addHistory(page, ScreenManager.SCREEN_CONTAINER_ID, params);
-        ViewManager.showView(page, ScreenManager.SCREEN_CONTAINER_ID, function() {
+        ScreenManager.showScreen(page, ScreenManager.SCREEN_CONTAINER_ID, function() {
             ($(ScreenManager.SCREEN_CONTAINER_ID)).foundation();
             if (callback != null) 
                 callback();
@@ -791,20 +762,20 @@ ScreenManager = stjs.extend(ScreenManager, ViewManager, [], function(constructor
      *  Set's the current screen, then show's it by calling the display function. This replaces the current HistoryClosure
      *  element for the current screen in the history array, rather than leaving it and (potentially) adding another
      *  history array element like changeScreen
-     *  
+     * 
+     *  @param {EcScreen}  page
+     *                     Screen to set as current and display
+     *  @param {Callback0} callback
+     *                     Function to invoke after the page has been displayed and foundation has been set up on the new HTML
+     *  @param {Object}    params
+     *                     URL Parameters to set when replacing screen
      *  @memberOf ScreenManager
      *  @method replaceScreen
      *  @static
-     *  @param {EcScreen} page
-     *  			Screen to set as current and display
-     *  @param {Callback0} callback
-     *  			Function to invoke after the page has been displayed and foundation has been set up on the new HTML
-     *  @param {Object} params
-     *  			URL Parameters to set when replacing screen
      */
     constructor.replaceScreen = function(page, callback, params) {
         ScreenManager.replaceHistory(page, ScreenManager.SCREEN_CONTAINER_ID, params);
-        ViewManager.showView(page, ScreenManager.SCREEN_CONTAINER_ID, function() {
+        ScreenManager.showScreen(page, ScreenManager.SCREEN_CONTAINER_ID, function() {
             ($(ScreenManager.SCREEN_CONTAINER_ID)).foundation();
             if (callback != null) 
                 callback();
@@ -812,33 +783,33 @@ ScreenManager = stjs.extend(ScreenManager, ViewManager, [], function(constructor
     };
     /**
      *  Reloads the current screen, leaving the history alone
-     *  
+     * 
+     *  @param {Callback0} callback
+     *                     Function to invoke after the page has been redisplayed and foundation has been set up on the new HTML
      *  @memberOf ScreenManager
      *  @method reloadCurrentScreen
      *  @static
-     *  @param {Callback0} callback
-     *  			Function to invoke after the page has been redisplayed and foundation has been set up on the new HTML
      */
     constructor.reloadCurrentScreen = function(callback) {
-        ViewManager.showView(ScreenManager.getCurrentScreen(), ScreenManager.SCREEN_CONTAINER_ID, function() {
+        ScreenManager.showScreen(ScreenManager.getCurrentScreen(), ScreenManager.SCREEN_CONTAINER_ID, function() {
             ($(ScreenManager.SCREEN_CONTAINER_ID)).foundation();
             if (callback != null) 
                 callback();
         });
     };
     /**
-     *  Adds the screen passed in and the display container to a HistoryClosure element and pushes it 
+     *  Adds the screen passed in and the display container to a HistoryClosure element and pushes it
      *  on the end of the history cache array. This does not ensure that the screen is displayed though.
-     *  
+     * 
+     *  @param {EcScreen} screen
+     *                    The screen to add to the history cache array
+     *  @param {String}   displayContainerId
+     *                    DOM Element ID corresponding to where the screen will be displayed (likely the SCREEN_CONTAINER_ID)
+     *  @param {Object}   params
+     *                    Object containing key to value pairs that should be put in the url bar to store in history
      *  @memberOf ScreenManager
      *  @method addHistory
      *  @static
-     *  @param {EcScreen} screen
-     *  			The screen to add to the history cache array
-     *  @param {String} displayContainerId
-     *  			DOM Element ID corresponding to where the screen will be displayed (likely the SCREEN_CONTAINER_ID)
-     *  @param {Object} params
-     *  			Object containing key to value pairs that should be put in the url bar to store in history
      */
     constructor.addHistory = function(screen, displayContainerId, params) {
         var name = screen.getDisplayName();
@@ -860,21 +831,21 @@ ScreenManager = stjs.extend(ScreenManager, ViewManager, [], function(constructor
         }
         var pageName = name;
         ScreenManager.myHistory[ScreenManager.myHistory.length] = new HistoryClosure(pageName, screen, displayContainerId, params);
-        (window.history).pushState({name: pageName}, pageName, hash);
+        (window.history).pushState({name: pageName, parameters: params}, pageName, hash);
     };
     /**
-     *  Replaces the current end of the history array with a new HistoryClosure element that contains the screen and 
+     *  Replaces the current end of the history array with a new HistoryClosure element that contains the screen and
      *  containerId passed in.
-     *  
+     * 
+     *  @param {EcScreen} screen
+     *                    Screen to add to the history element that will replace the last in the history array
+     *  @param {String}   displayContainerId
+     *                    DOM Element ID corresponding to where the screen will be displayed (likely the SCREEN_CONTAINER_ID)
+     *  @param {Object{   params
+     *                    Object containing key to value pairs that should be put in the url bar to remember state at this history point
      *  @memberOf ScreenManager
      *  @method replaceHistory
      *  @static
-     *  @param {EcScreen} screen
-     *  			Screen to add to the history element that will replace the last in the history array
-     *  @param {String} displayContainerId
-     *  			DOM Element ID corresponding to where the screen will be displayed (likely the SCREEN_CONTAINER_ID)
-     *  @param {Object{ params
-     *  			Object containing key to value pairs that should be put in the url bar to remember state at this history point
      */
     constructor.replaceHistory = function(screen, displayContainerId, params) {
         var name = screen.getDisplayName();
@@ -888,27 +859,29 @@ ScreenManager = stjs.extend(ScreenManager, ViewManager, [], function(constructor
             idx = 0;
         ScreenManager.myHistory[idx] = new HistoryClosure(pageName, screen, displayContainerId, params);
         var hash = "#" + pageName;
+        var query = "";
         if (params != null) {
-            hash += "?";
+            query += "?";
             for (var str in (params)) {
-                if (!hash.endsWith("?")) 
-                    hash += "&";
-                hash += str + "=" + (params)[str];
+                if (!query.endsWith("?")) 
+                    query += "&";
+                query += str + "=" + (params)[str];
             }
         }
-        if (hash.endsWith("?")) {
-            hash = hash.substring(0, hash.length - 1);
+        window.location.hash = hash;
+        if (query.endsWith("?")) {
+            query = query.substring(0, hash.length - 1);
         }
-        (window.history).replaceState({name: pageName}, pageName, hash);
+        (window.history).replaceState({name: window.location.hash + window.location.search, parameters: params}, pageName, hash + query);
     };
     /**
      *  Sets the url parameters on the current page
-     *  
+     * 
+     *  @param {Object} params
+     *                  url parameters json object
      *  @memberOf ScreenManager
      *  @method setScreenParameters
      *  @static
-     *  @param {Object} params
-     *  			url parameters json object
      */
     constructor.setScreenParameters = function(params) {
         ScreenManager.replaceHistory(ScreenManager.myHistory[ScreenManager.myHistory.length - 1].screen, ScreenManager.SCREEN_CONTAINER_ID, params);
@@ -917,21 +890,24 @@ ScreenManager = stjs.extend(ScreenManager, ViewManager, [], function(constructor
      *  Searches through the history array for the last screen that was loaded with the name passed in, and then displays
      *  it in the container that it was associated with. If there is no screen in the history, then check
      *  if there is a startupScreen that can be loaded right now, otherwise load the default screen
-     *  
+     * 
+     *  @param {String} name
+     *                  Name of the screen to search for in the history array
      *  @memberOf ScreenManager
      *  @method loadHistoryScreen
      *  @static
-     *  @param {String} name
-     *  			Name of the screen to search for in the history array
      */
     constructor.loadHistoryScreen = function(name) {
+        var backCount = 0;
+        name = name.replace("#", "");
         for (var i = ScreenManager.myHistory.length - 1; i > -1; i--) {
+            backCount++;
             if (ScreenManager.myHistory[i].pageName == name) {
                 if (ScreenManager.myHistory[i].screen != null) {
                     var screen = ScreenManager.myHistory[i].screen;
                     if (ScreenManager.loadHistoryCallback != null) 
                         ScreenManager.loadHistoryCallback(screen, ScreenManager.myHistory[i].screenParameters);
-                    ViewManager.showView(screen, ScreenManager.myHistory[i].containerId, function() {
+                    ScreenManager.showScreen(screen, ScreenManager.myHistory[i].containerId, function() {
                         ($(ScreenManager.SCREEN_CONTAINER_ID)).foundation();
                     });
                     ScreenManager.myHistory[ScreenManager.myHistory.length] = new HistoryClosure(name, screen, ScreenManager.myHistory[i].containerId, ScreenManager.myHistory[i].screenParameters);
@@ -954,6 +930,19 @@ ScreenManager = stjs.extend(ScreenManager, ViewManager, [], function(constructor
         var defaultName = name;
         if (name.equals(defaultName)) {
             window.history.go(-1 * window.history.length);
+        }
+    };
+    /**
+     *  Shows a screen, and cleans up the previous screen.
+     *  @param screen Screen to display.
+     *  @param screenContainerId Container ID to display the screen in.
+     *  @param callback0 Event to call when finished displaying.
+     */
+    constructor.showScreen = function(screen, screenContainerId, callback0) {
+        ViewManager.showView(screen, screenContainerId, callback0);
+        for (var viewContainerId in ViewManager.viewMap) {
+            if ($(viewContainerId).length == 0) 
+                ViewManager.destroyView(viewContainerId);
         }
     };
 }, {myHistory: {name: "Array", arguments: ["HistoryClosure"]}, LOADING_STARTUP_PAGE: "EcScreen", defaultScreen: "EcScreen", startupScreen: "EcScreen", startupCallback: {name: "Callback1", arguments: [null]}, loadHistoryCallback: {name: "Callback2", arguments: ["EcScreen", "Object"]}, startupScreenCallbacks: {name: "Array", arguments: ["Callback0"]}, viewMap: {name: "Map", arguments: [null, "EcView"]}}, {});
@@ -981,6 +970,114 @@ var EcOverlay = function() {
     EcScreen.call(this);
 };
 EcOverlay = stjs.extend(EcOverlay, EcScreen, [], null, {failure: {name: "Callback1", arguments: [null]}, nameToTemplate: "Object"}, {});
+var URLParams = function() {};
+URLParams = stjs.extend(URLParams, null, [], function(constructor, prototype) {
+    /**
+     *  Returns the URL Query parameters of the browser window
+     *  
+     *  @memberOf URLParams
+     *  @method queryParams
+     *  @static
+     *  @return {Map<String, String>}
+     *  			URL Query Parameters in a map
+     */
+    constructor.queryParams = function() {
+        if (window.document.location.search == null) 
+            return {};
+        var hashSplit = (window.document.location.search.split("?"));
+        if (hashSplit.length > 1) {
+            var o = {};
+            var paramString = hashSplit[1];
+            var parts = (paramString).split("&");
+            for (var i = 0; i < parts.length; i++) 
+                o[parts[i].split("=")[0]] = parts[i].replace(parts[i].split("=")[0] + "=", "");
+            return o;
+        }
+        return {};
+    };
+    /**
+     *  Returns the URL Hash parameters of the browser window
+     *  
+     *  @memberOf EcView
+     *  @method hashParams
+     *  @static
+     *  @return {Map<String, String>}
+     *  			URL Hash Parameters in a map
+     */
+    constructor.hashParams = function() {
+        if (window.document.location.hash == null) 
+            return {};
+        var hashSplit = (window.document.location.hash.split("?"));
+        if (hashSplit.length > 1) {
+            var o = {};
+            var paramString = hashSplit[1];
+            var parts = (paramString).split("&");
+            for (var i = 0; i < parts.length; i++) 
+                o[parts[i].split("=")[0]] = parts[i].replace(parts[i].split("=")[0] + "=", "");
+            return o;
+        }
+        return {};
+    };
+    /**
+     *  Returns the URL parameters of the browser window
+     *  
+     *  @memberOf URLParams
+     *  @method getParams
+     *  @static
+     *  @return {Map<String, String>}
+     *  			URL Parameters in a map
+     */
+    constructor.getParams = function() {
+        var params = URLParams.hashParams();
+        var queryParams = URLParams.queryParams();
+        for (var key in (queryParams)) {
+            (params)[key] = (queryParams)[key];
+        }
+        return params;
+    };
+    /**
+     *  Returns a specific URL parameter
+     *  
+     *  @memberOf URLParams
+     *  @method get
+     *  @static
+     *  @param {String} paramName
+     *  			Name of URL parameter to retrieve
+     *  @return {String}
+     *  			Value of URL parameter if it exists
+     */
+    constructor.get = function(paramName) {
+        return URLParams.getParams()[paramName];
+    };
+    /**
+     *  Sets a specific URL Parameter
+     *  
+     *  @memberOf URLParams
+     *  @method set
+     *  @static
+     *  @param {String} paramName
+     *  			Name of URL parameter to set
+     *  @param {String} val
+     *  			Value to set for URL parameter
+     */
+    constructor.set = function(paramName, val) {
+        var params = URLParams.getParams();
+        params[paramName] = val;
+        ScreenManager.setScreenParameters(params);
+    };
+    /**
+     *  Sets a specific URL Parameter
+     *  
+     *  @memberOf URLParams
+     *  @method setAll
+     *  @static
+     *  @param {Object} params
+     *  			Map of Strings to Strings for URL parameters
+     */
+    constructor.setAll = function(params) {
+        ScreenManager.setScreenParameters(params);
+    };
+}, {}, {});
 /**
  *  View Manager that manages displaying overlay views (views that take over the screen, but can be exited to return to
  *  the previous screen) with a few helper functions for managing overlays
@@ -1128,7 +1225,7 @@ OverlayManager = stjs.extend(OverlayManager, ScreenManager, [], function(constru
     constructor.hideOverlay = function() {
         $(OverlayManager.OVERLAY_WRAPPER_ID).fadeOut();
         OverlayManager.inOverlay = false;
-        if (ScreenManager.myHistory.length <= 2 && OverlayManager.refreshOnOverlayClose) 
+        if (ScreenManager.myHistory.length <= 2 && OverlayManager.refreshOnOverlayClose && OverlayManager.lastScreen != null) 
             OverlayManager.changeScreen(OverlayManager.lastScreen, null, OverlayManager.lastScreenParams, null);
         ViewManager.setView(OverlayManager.OVERLAY_CONTAINER_ID, null);
     };
