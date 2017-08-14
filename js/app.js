@@ -17,7 +17,7 @@ queryParams = function () {
         var paramString = hashSplit[1];
         var parts = (paramString).split("&");
         for (var i = 0; i < parts.length; i++)
-            o[parts[i].split("=")[0]] = parts[i].replace(parts[i].split("=")[0] + "=", "");
+            o[parts[i].split("=")[0]] = decodeURIComponent(parts[i].replace(parts[i].split("=")[0] + "=", ""));
         return o;
     }
     return {};
