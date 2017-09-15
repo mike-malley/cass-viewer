@@ -198,7 +198,7 @@ $("#search").keyup(function (event) {
 });
 
 window.onload = function () {
-    if (parent) {
+    if (parent != window) {
         importParentStyles();
         var oHead = document.getElementsByTagName("head")[0];
         var arrStyleSheets = parent.document.getElementsByTagName("style");
