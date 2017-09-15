@@ -1,0 +1,38 @@
+<html>
+
+<head>
+    <style>
+        body {
+            background-color: lightgray;
+            color: maroon;
+            font-family: sans-serif;
+        }
+        
+        h1 {}
+
+    </style>
+    <script>
+        window.addEventListener('message', goToThing, false);
+
+        function goToThing(event) {
+            //check the origin, to make sure it comes from a trusted source.
+            if (false && event.origin !== 'http://127.0.0.1:36161')
+                return;
+            alert("I got " + event.data.length + " selected items from the iframe");
+        }
+
+    </script>
+</head>
+
+<body>
+    <center>
+        <h1>Competency Selector Control</h1>
+        <hr>
+        <br>
+        <br>
+        <br>
+        <iframe width="500" height="400" frameborder="0" src="view.html?server=http://sandbox.cassproject.org&select=Add&origin=http://127.0.0.1:36161/"></iframe>
+    </center>
+</body>
+
+</html>
