@@ -56,7 +56,7 @@ function refreshFrameworks() {
     var me = this;
     me.loading = 0;
     $("#sidebar").show().find("#loading").show().find("#status").text("Loading...");
-    $("#sidebar").find("a,br").remove();
+    $("#frameworks").html("");
     for (var i = 0; i < servers.length; i++) {
         loading++;
         EcFramework.search(servers[i], searchTerm, function (frameworks) {
@@ -64,7 +64,7 @@ function refreshFrameworks() {
                 var framework = frameworks[v];
                 if (framework.name === undefined || framework.name == null || framework.name == "")
                     continue;
-                $("#frameworks").append("<p><a style='display:none'/><span/></p>").children().last().children().first().attr("id", framework.shortId()).text(framework.name).click(click).parent().children().last().text(framework.description);
+                $("#frameworks").append("<p><a style='display:none'/><span/></p>").children().last().attr("id", framework.shortId()).click(click).children().first().text(framework.name).parent().children().last().text(framework.description);
             }
             loading--;
             if (loading == 0) {
@@ -88,6 +88,8 @@ function select() {
 function click(evt) {
     hideAll();
     frameworkId = $(evt.target).attr("id");
+    if (frameworkId == null)
+        frameworkId = $(evt.target).parent().attr("id");
     $("#sidebar").hide();
     repo = null;
     for (var i = 0; i < servers.length; i++)
@@ -181,28 +183,11 @@ function refreshFramework() {
 function showAll() {
     $("#mainbar").find("#loading").hide();
     $("#tree").show();
-    $("#sidetitle").show();
-    $("#sidelog").show();
-    $("#sidedevicestitle").show();
-    $("#sidedevices").show();
-    $("select").show();
-    $("#totalContainer").show();
-    $("#total").show();
-    $("#totalText").show();
 }
 
 function hideAll() {
-    $('.done').show();
-    $("#sidetitle").hide();
-    $("#sidelog").hide();
-    $("#sidedevicestitle").hide();
-    $("#sidedevices").hide();
     $("#mainbar").find("#loading").show();
     $("#tree").hide();
-    $("select").hide();
-    $("#totalContainer").hide();
-    $("#total").hide();
-    $("#totalText").hide();
 }
 
 $("#search").keyup(function (event) {
@@ -211,5 +196,14 @@ $("#search").keyup(function (event) {
     }
     return false;
 });
+
+window.onload = function () {
+    if (parent) {
+        var oHead = document.getElementsByTagName("head")[0];
+        var arrStyleSheets = parent.document.getElementsByTagName("style");
+        for (var i = 0; i < arrStyleSheets.length; i++)
+            oHead.appendChild(arrStyleSheets[i].cloneNode(true));
+    }
+}
 
 refreshFrameworks();
