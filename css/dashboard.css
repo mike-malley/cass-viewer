@@ -9,7 +9,6 @@
 */
 
 body {
-    color: inherit;
     padding: 0;
     margin: 0;
     box-sizing: border-box;
@@ -120,13 +119,15 @@ button:hover {
     border: 0;
     -webkit-border-radius: 4;
     -moz-border-radius: 4;
-    border-radius: .5rem;
+    border-radius: .25rem;
     border: none;
     background-color: transparent;
+    color: inherit;
     width: 99%;
     height: 1.6rem;
     margin: 0px;
     padding: 0px;
+    padding-left: .25rem;
     font-size: 1.5rem;
     /* Permalink - use to edit and share this gradient: http://colorzilla.com/gradient-editor/#ffffff+0,ffffff+100&0.5+0,0.5+100 */
     background-image: -moz-linear-gradient(top, rgba(255, 255, 255, 0.5) 0%, rgba(255, 255, 255, 0.5) 100%);
