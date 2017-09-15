@@ -9,17 +9,6 @@
         }
 
     </style>
-    <script>
-        window.addEventListener('message', goToThing, false);
-
-        function goToThing(event) {
-            //check the origin, to make sure it comes from a trusted source.
-            if (false && event.origin !== 'https://cassproject.github.io')
-                return;
-            alert("I got " + event.data.length + " selected items from the iframe");
-        }
-
-    </script>
 </head>
 
 <body>
@@ -29,8 +18,20 @@
         <br>
         <br>
         <br>
-        <iframe width="500" height="400" frameborder="0" src="index.html?server=http://sandbox.cassproject.org&select=Add&origin=https://cassproject.github.io/"></iframe>
+        <iframe id="iframe" width="500" height="400" frameborder="0"></iframe>
     </center>
+    <script>
+        window.addEventListener('message', goToThing, false);
+
+        function goToThing(event) {
+            //check the origin, to make sure it comes from a trusted source.
+            if (false && event.origin !== window.location.origin)
+                return;
+            alert("I got " + event.data.length + " selected items from the iframe");
+        }
+        document.getElementsByTagName("iframe")[0].setAttribute("src", "index.html?server=http://sandbox.cassproject.org&select=Add&origin=" + window.location.origin);
+
+    </script>
 </body>
 
 </html>
