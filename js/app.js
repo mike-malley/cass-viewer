@@ -133,7 +133,7 @@ function refreshFramework() {
                         treeNode.prepend("<span>" + competency.name + "</span>").children().first().click(function (evt) {
                             $(evt.target).parent().children("ul").slideToggle();
                         });
-                        if (queryParams.select  != null)
+                        if (queryParams.select != null)
                             treeNode.prepend("<input type='checkbox'>").children().first().click(function (evt) {
                                 console.log(evt);
                                 $(evt.target).parent().find("input").prop("checked", evt.target.checked);
@@ -179,7 +179,7 @@ function refreshFramework() {
 
 
 function showAll() {
-    $("#main").find("#loading").hide();
+    $("#mainbar").find("#loading").hide();
     $("#tree").show();
     $("#sidetitle").show();
     $("#sidelog").show();
@@ -197,7 +197,7 @@ function hideAll() {
     $("#sidelog").hide();
     $("#sidedevicestitle").hide();
     $("#sidedevices").hide();
-    $("#main").find("#loading").show();
+    $("#mainbar").find("#loading").show();
     $("#tree").hide();
     $("select").hide();
     $("#totalContainer").hide();
