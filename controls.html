@@ -14,7 +14,7 @@
 
         function goToThing(event) {
             //check the origin, to make sure it comes from a trusted source.
-            if (false && event.origin !== 'http://127.0.0.1:36161')
+            if (false && event.origin !== 'https://cassproject.github.io')
                 return;
             alert("I got " + event.data.length + " selected items from the iframe");
         }
@@ -29,7 +29,7 @@
         <br>
         <br>
         <br>
-        <iframe width="500" height="400" frameborder="0" src="index.html?server=http://sandbox.cassproject.org&select=Add&origin=http://127.0.0.1:36161/"></iframe>
+        <iframe width="500" height="400" frameborder="0" src="index.html?server=http://sandbox.cassproject.org&select=Add&origin=https://cassproject.github.io/"></iframe>
     </center>
 </body>
 
