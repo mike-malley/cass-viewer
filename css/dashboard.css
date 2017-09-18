@@ -102,6 +102,7 @@ button:hover {
     height: 100%;
     overflow: hidden;
     padding: 0px;
+    z-index: 5;
 }
 #header {
     position: absolute;

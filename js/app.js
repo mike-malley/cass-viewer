@@ -43,7 +43,7 @@ if (queryParams.server != null)
 for (var i = 0; i < servers.length; i++) {
     var r = new EcRepository();
     r.selectedServer = servers[i];
-    r.autoDetectRepository();
+//    r.autoDetectRepository();
     servers[i] = r;
 }
 
@@ -90,8 +90,15 @@ function click(evt) {
     frameworkId = $(evt.target).attr("id");
     if (frameworkId == null)
         frameworkId = $(evt.target).parent().attr("id");
-    $("#sidebar").hide();
     repo = null;
+    $("#sidebar").hide(
+        {
+            complete: function(){
+                $("#mainbar").show({
+                    complete: function(){}
+                });
+        }
+    });
     for (var i = 0; i < servers.length; i++)
         if (frameworkId.startsWith(servers[i])) {
             repo = new EcRepository();
@@ -111,7 +118,6 @@ function refreshFramework() {
     me.fetches = 0;
     EcRepository.get(frameworkId, function (framework) {
         $("#title").text(framework.name);
-        $("#mainbar").show();
         if (framework.competency == null)
             framework.competency = [];
         if (framework.relation == null)
