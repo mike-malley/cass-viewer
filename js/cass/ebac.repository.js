@@ -1,27 +1,18 @@
-/*
- Copyright 2015-2016 Eduworks Corporation and other contributing parties.
-
- Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except in compliance with the License. You may obtain a copy of the License at
-
- http://www.apache.org/licenses/LICENSE-2.0
-
- Unless required by applicable law or agreed to in writing, software distributed under the License is distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the License for the specific language governing permissions and limitations under the License.
-*/
 /**
  *  Represents an encrypted piece of data. Provides helper functions for
  *  encryption/decryption of JSON-LD objects, and provides some searchability of
  *  the data within.
  * 
+ *  @author fritz.ray@eduworks.com
  *  @module com.eduworks.ec
  *  @class EcEncryptedValue
  *  @extends EbacEncryptedValue
- * 
- *  @author fritz.ray@eduworks.com
  */
 var EcEncryptedValue = function() {
     EbacEncryptedValue.call(this);
 };
 EcEncryptedValue = stjs.extend(EcEncryptedValue, EbacEncryptedValue, [], function(constructor, prototype) {
+    constructor.encryptOnSaveMap = null;
     constructor.revive = function(partiallyRehydratedObject) {
         var v = new EcEncryptedValue();
         v.copyFrom(partiallyRehydratedObject);
@@ -30,18 +21,18 @@ EcEncryptedValue = stjs.extend(EcEncryptedValue, EbacEncryptedValue, [], functio
     /**
      *  Converts a piece of remote linked data to an encrypted value
      * 
+     *  @param {EcRemoteLinkedData} d Data to encrypt
+     *  @param {Boolean}            hideType Flag to hide the type of the encrypted value
+     *                              when encrypting
+     *  @return {EcEncryptedValue} Encrypted value
      *  @memberOf EcEncryptedValue
      *  @method toEncryptedValue
      *  @static
-     *  @param {EcRemoteLinkedData} d Data to encrypt
-     *  @param {boolean} hideType Flag to hide the type of the encrypted value
-     *  when encrypting
-     *  @return {EcEncryptedValue} Encrypted value
      */
     constructor.toEncryptedValue = function(d, hideType) {
         d.updateTimestamp();
         var v = new EcEncryptedValue();
-        if (!hideType) {
+        if (hideType == null || !hideType) {
             v.encryptedType = d.type;
         }
         var newIv = EcAes.newIv(16);
@@ -81,21 +72,21 @@ EcEncryptedValue = stjs.extend(EcEncryptedValue, EbacEncryptedValue, [], functio
      *  Converts a piece of remote linked data to an encrypted value,
      *  asynchronously
      * 
+     *  @param {EcRemoteLinkedData}          d Data to encrypt
+     *  @param {boolean}                     hideType Flag to hide the type of the encrypted value
+     *                                       when encrypting
+     *  @param {Callback1<EcEncryptedValue>} success Callback triggered with
+     *                                       successfully encrypted, returns the encrypted value
+     *  @param {Callback1<String>}           failure Callback triggered on error during
+     *                                       encryption
      *  @memberOf EcEncryptedValue
      *  @method toEncryptedValueAsync
      *  @static
-     *  @param {EcRemoteLinkedData} d Data to encrypt
-     *  @param {boolean} hideType Flag to hide the type of the encrypted value
-     *  when encrypting
-     *  @param {Callback1<EcEncryptedValue>} success Callback triggered with
-     *  successfully encrypted, returns the encrypted value
-     *  @param {Callback1<String>} failure Callback triggered on error during
-     *  encryption
      */
     constructor.toEncryptedValueAsync = function(d, hideType, success, failure) {
         d.updateTimestamp();
         var v = new EcEncryptedValue();
-        if (!hideType) {
+        if (hideType == null || !hideType) {
             v.encryptedType = d.type;
         }
         var newIv = EcAes.newIv(16);
@@ -144,14 +135,14 @@ EcEncryptedValue = stjs.extend(EcEncryptedValue, EbacEncryptedValue, [], functio
     /**
      *  Encrypts a text value with the key provided
      * 
+     *  @param {String} text Text to encrypt
+     *  @param {String} id ID of the encrypted value
+     *  @param {EcPk}   owner Key to Encrypt
+     *  @return {EcEncryptedValue} Encrypted value
      *  @memberOf EcEncryptedValue
      *  @method encryptValueOld
      *  @static
      *  @deprecated
-     *  @param {String} text Text to encrypt
-     *  @param {String} id ID of the encrypted value
-     *  @param {EcPk} owner Key to Encrypt
-     *  @return {EcEncryptedValue} Encrypted value
      */
     constructor.encryptValueOld = function(text, id, owner) {
         var v = new EcEncryptedValue();
@@ -174,14 +165,14 @@ EcEncryptedValue = stjs.extend(EcEncryptedValue, EbacEncryptedValue, [], functio
     /**
      *  Encrypts a text value with the owners and readers provided
      * 
-     *  @memberOf EcEncryptedValue
-     *  @method encryptValue
-     *  @static
-     *  @param {String} text Text to encrypt
-     *  @param {String} id ID of the value to encrypt
+     *  @param {String}   text Text to encrypt
+     *  @param {String}   id ID of the value to encrypt
      *  @param {String[]} owners Owner keys to encrypt value with
      *  @param {String[]} readers Reader keys to encrypt value with
      *  @return {EcEncryptedValue} Encrypted value
+     *  @memberOf EcEncryptedValue
+     *  @method encryptValue
+     *  @static
      */
     constructor.encryptValue = function(text, id, owners, readers) {
         var v = new EcEncryptedValue();
@@ -229,16 +220,16 @@ EcEncryptedValue = stjs.extend(EcEncryptedValue, EbacEncryptedValue, [], functio
     /**
      *  Encrypt a value with a specific IV and secret
      * 
-     *  @memberOf EcEncryptedValue
-     *  @method encryptValueUsingIvAndSecret
-     *  @static
-     *  @param {String} iv Initialization Vector for encryption
-     *  @param {String} secret Encryption secret
-     *  @param {String} text Text to encrypt
-     *  @param {String} id ID of value to encrypt
+     *  @param {String}   iv Initialization Vector for encryption
+     *  @param {String}   secret Encryption secret
+     *  @param {String}   text Text to encrypt
+     *  @param {String}   id ID of value to encrypt
      *  @param {String[]} owners Owners keys to encrypt with
      *  @param {String[]} readers Reader Keys to encrypt with
      *  @return {EcEncryptedValue}
+     *  @memberOf EcEncryptedValue
+     *  @method encryptValueUsingIvAndSecret
+     *  @static
      */
     constructor.encryptValueUsingIvAndSecret = function(iv, secret, text, id, owners, readers) {
         var v = new EcEncryptedValue();
@@ -268,11 +259,42 @@ EcEncryptedValue = stjs.extend(EcEncryptedValue, EbacEncryptedValue, [], functio
         return v;
     };
     /**
+     *  Setter and getter function for encryptOnSave of an identifier,
+     *  encryptOnSave is used by the static save functions of a class to
+     *  determine whether or not to encrypt something when it is saved. This
+     *  value is usually set when an object is decrypted using one of the decrypt
+     *  functions above.
+     * 
+     *  @param {String}  id ID of the data to get/set encryptOnSave for
+     *  @param {boolean} [val] If passed in, sets the value, if null this
+     *                   function gets the encryptOnSave value
+     *  @return {boolean} if val is null/ignored returns value in the map, if val
+     *  is passed in returns val
+     *  @memberOf EcEncryptedValue
+     *  @method encryptOnSave
+     *  @static
+     */
+    constructor.encryptOnSave = function(id, val) {
+        if (EcEncryptedValue.encryptOnSaveMap == null) {
+            EcEncryptedValue.encryptOnSaveMap = {};
+        }
+        if (val == null) {
+            if (EcEncryptedValue.encryptOnSaveMap[id] != null) {
+                return EcEncryptedValue.encryptOnSaveMap[id];
+            } else {
+                return false;
+            }
+        } else {
+            EcEncryptedValue.encryptOnSaveMap[id] = val;
+            return val;
+        }
+    };
+    /**
      *  Decrypts this encrypted value into an object
      * 
+     *  @return The Decrypted Object
      *  @memberOf EcEncryptedValue
      *  @method decryptIntoObject
-     *  @return The Decrypted Object
      */
     prototype.decryptIntoObject = function() {
         var decryptRaw = this.decryptIntoString();
@@ -291,12 +313,12 @@ EcEncryptedValue = stjs.extend(EcEncryptedValue, EbacEncryptedValue, [], functio
     /**
      *  Asynchronously decrypts this encrypted value into an object
      * 
+     *  @param {Callback1<EcRemoteLinkedDat>} success Callback triggered on
+     *                                        successful encryption, returns the decrypted object
+     *  @param {Callback1<String>}            failure Callback triggered if error during
+     *                                        encryption
      *  @memberOf EcEncryptedValue
      *  @method decryptIntoObjectAsync
-     *  @param {Callback1<EcRemoteLinkedDat>} success Callback triggered on
-     *  successful encryption, returns the decrypted object
-     *  @param {Callback1<String>} failure Callback triggered if error during
-     *  encryption
      */
     prototype.decryptIntoObjectAsync = function(success, failure) {
         var id = this.id;
@@ -318,14 +340,14 @@ EcEncryptedValue = stjs.extend(EcEncryptedValue, EbacEncryptedValue, [], functio
      *  Asynchronously decrypts this encrypted value into an object with a IV and
      *  secret provided
      * 
+     *  @param {String}                        iv Initialization Vector for decryption
+     *  @param {String}                        secret Secret for decryption
+     *  @param {Callback1<EcRemoteLinkedData>} success Callback triggered after
+     *                                         successful decryption
+     *  @param {Callback1<String>}             failure Callback triggered if error during
+     *                                         decryption
      *  @memberOf EcEncryptedValue
      *  @method decryptIntoObjectUsingIvAndSecretAsync
-     *  @param {String} iv Initialization Vector for decryption
-     *  @param {String} secret Secret for decryption
-     *  @param {Callback1<EcRemoteLinkedData>} success Callback triggered after
-     *  successful decryption
-     *  @param {Callback1<String>} failure Callback triggered if error during
-     *  decryption
      */
     prototype.decryptIntoObjectUsingIvAndSecretAsync = function(iv, secret, success, failure) {
         this.decryptIntoStringUsingIvAndSecretAsync(iv, secret, function(decryptRaw) {
@@ -344,9 +366,9 @@ EcEncryptedValue = stjs.extend(EcEncryptedValue, EbacEncryptedValue, [], functio
     /**
      *  Decrypts an encrypted value into a string
      * 
+     *  @return {String} Decrypted string value
      *  @memberOf EcEncryptedValue
      *  @method decryptIntoString
-     *  @return {String} Decrypted string value
      */
     prototype.decryptIntoString = function() {
         var decryptSecret = this.decryptSecret();
@@ -358,17 +380,21 @@ EcEncryptedValue = stjs.extend(EcEncryptedValue, EbacEncryptedValue, [], functio
     /**
      *  Asynchronously decrypts an encrypted value into a string
      * 
+     *  @param {Callback1<String>} success Callback triggered after successfully
+     *                             decrypted, returns decrypted string
+     *  @param {Callback1<String>} failure Callback triggered if error during
+     *                             decryption
      *  @memberOf EcEncryptedValue
      *  @method decryptIntoStringAsync
-     *  @param {Callback1<String>} success Callback triggered after successfully
-     *  decrypted, returns decrypted string
-     *  @param {Callback1<String>} failure Callback triggered if error during
-     *  decryption
      */
     prototype.decryptIntoStringAsync = function(success, failure) {
         var me = this;
         this.decryptSecretAsync(function(decryptSecret) {
             if (decryptSecret != null) {
+                if (me.context == Ebac.context_0_2 || me.context == Ebac.context_0_3) {
+                    if (base64.decode(decryptSecret.iv).byteLength == 32) 
+                        decryptSecret.iv = base64.encode(base64.decode(decryptSecret.iv).slice(0, 16));
+                }
                 EcAesCtrAsync.decrypt(me.payload, decryptSecret.secret, decryptSecret.iv, success, failure);
             }
         }, failure);
@@ -377,25 +403,29 @@ EcEncryptedValue = stjs.extend(EcEncryptedValue, EbacEncryptedValue, [], functio
      *  Asynchronously decrypts an encrypted value into a string with an IV and
      *  secrete provided
      * 
+     *  @param {String}            iv Initialization Vector for decryption
+     *  @param {String}            secret Secret for decryption
+     *  @param {Callback1<String>} success Callback triggered on successful
+     *                             decryption
+     *  @param {Callback1<String>} failure Callback triggered if error during
+     *                             decryption
      *  @memberOf EcEncryptedValue
      *  @method decryptIntoStringUsingIvAndSecretAsync
-     *  @param {String} iv Initialization Vector for decryption
-     *  @param {String} secret Secret for decryption
-     *  @param {Callback1<String>} success Callback triggered on successful
-     *  decryption
-     *  @param {Callback1<String>} failure Callback triggered if error during
-     *  decryption
      */
     prototype.decryptIntoStringUsingIvAndSecretAsync = function(iv, secret, success, failure) {
+        if (this.context == Ebac.context_0_2 || this.context == Ebac.context_0_3) {
+            if (base64.decode(iv).byteLength == 32) 
+                iv = base64.encode(base64.decode(iv).slice(0, 16));
+        }
         EcAesCtrAsync.decrypt(this.payload, secret, iv, success, failure);
     };
     /**
      *  Attempts to decrypt the secret by using all Identities in the Identity
      *  Manager
      * 
+     *  @return {EbacEncryptedSecret} Secret after decrypted
      *  @memberOf EcEncryptedValue
      *  @method decryptSecret
-     *  @return {EbacEncryptedSecret} Secret after decrypted
      */
     prototype.decryptSecret = function() {
         if (this.owner != null) {
@@ -435,12 +465,12 @@ EcEncryptedValue = stjs.extend(EcEncryptedValue, EbacEncryptedValue, [], functio
      *  Asynchronously attempts to decrypt secret using all identities in
      *  Identity Manager
      * 
+     *  @param {Callback1<EbacEncryptedSecret>} success Callback triggered after
+     *                                          successfully decrypting secret, returns the decrypted secret
+     *  @param {Callback1<String>}              failure Callback triggered if error decrypting
+     *                                          secret
      *  @memberOf EcEncryptedValue
      *  @method decryptSecretAsync
-     *  @param {Callback1<EbacEncryptedSecret>} success Callback triggered after
-     *  successfully decrypting secret, returns the decrypted secret
-     *  @param {Callback1<String>} failure Callback triggered if error decrypting
-     *  secret
      */
     prototype.decryptSecretAsync = function(success, failure) {
         var ppks = new Array();
@@ -491,10 +521,10 @@ EcEncryptedValue = stjs.extend(EcEncryptedValue, EbacEncryptedValue, [], functio
     /**
      *  Attempts to decrypt secret with a specific key
      * 
-     *  @memberOf EcEncryptedValue
-     *  @method decryptSecretByKey
      *  @param {EcPpk} decryptionKey Key to attempt secret decryption
      *  @return {EbacEncryptedSecret} Decrypted Secret
+     *  @memberOf EcEncryptedValue
+     *  @method decryptSecretByKey
      */
     prototype.decryptSecretByKey = function(decryptionKey) {
         var encryptedSecret = null;
@@ -515,13 +545,13 @@ EcEncryptedValue = stjs.extend(EcEncryptedValue, EbacEncryptedValue, [], functio
     /**
      *  Asynchronously attempts to decrypt secret with a specific key
      * 
+     *  @param {EcPpk}                          decryptionKey Key to attempt secret decryption
+     *  @param {Callback1<EbacEncryptedSecret>} success Callback triggered after
+     *                                          successful decryption of secret, returns decrypted secret
+     *  @param {Callback1<String>}              failure Callback triggered if error during
+     *                                          secret decryption
      *  @memberOf EcEncryptedValue
      *  @method decryptSecretByKeyAsync
-     *  @param {EcPpk} decryptionKey Key to attempt secret decryption
-     *  @param {Callback1<EbacEncryptedSecret>} success Callback triggered after
-     *  successful decryption of secret, returns decrypted secret
-     *  @param {Callback1<String>} failure Callback triggered if error during
-     *  secret decryption
      */
     prototype.decryptSecretByKeyAsync = function(decryptionKey, success, failure) {
         var encryptedSecret = null;
@@ -551,11 +581,11 @@ EcEncryptedValue = stjs.extend(EcEncryptedValue, EbacEncryptedValue, [], functio
      *  Checks if this encrypted value is an encrypted version of a specific
      *  type, only works if the type wasn't hidden during encryption
      * 
-     *  @memberOf EcEncryptedValue
-     *  @method isAnEncrypted
      *  @param {String} type Type to compare if an encrypted type
      *  @return {boolean} True if encrypted version of type, false if not or
      *  can't tell
+     *  @memberOf EcEncryptedValue
+     *  @method isAnEncrypted
      */
     prototype.isAnEncrypted = function(type) {
         if (this.encryptedType == null) {
@@ -567,9 +597,9 @@ EcEncryptedValue = stjs.extend(EcEncryptedValue, EbacEncryptedValue, [], functio
     /**
      *  Adds a reader to the object, if the reader does not exist.
      * 
+     *  @param {EcPk} newReader PK of the new reader.
      *  @memberOf EcEncryptedValue
      *  @method addReader
-     *  @param {EcPk} newReader PK of the new reader.
      */
     prototype.addReader = function(newReader) {
         var pem = newReader.toPem();
@@ -592,9 +622,9 @@ EcEncryptedValue = stjs.extend(EcEncryptedValue, EbacEncryptedValue, [], functio
     /**
      *  Removes a reader from the object, if the reader does exist.
      * 
+     *  @param {EcPk} oldReader PK of the old reader.
      *  @memberOf EcEncryptedValue
      *  @method removeReader
-     *  @param {EcPk} oldReader PK of the old reader.
      */
     prototype.removeReader = function(oldReader) {
         var pem = oldReader.toPem();
@@ -607,48 +637,15 @@ EcEncryptedValue = stjs.extend(EcEncryptedValue, EbacEncryptedValue, [], functio
             }
         }
     };
-    constructor.encryptOnSaveMap = null;
-    /**
-     *  Setter and getter function for encryptOnSave of an identifier,
-     *  encryptOnSave is used by the static save functions of a class to
-     *  determine whether or not to encrypt something when it is saved. This
-     *  value is usually set when an object is decrypted using one of the decrypt
-     *  functions above.
-     * 
-     *  @memberOf EcEncryptedValue
-     *  @method encryptOnSave
-     *  @static
-     *  @param {String} id ID of the data to get/set encryptOnSave for
-     *  @param {boolean} [val] If passed in, sets the value, if null this
-     *  function gets the encryptOnSave value
-     *  @return {boolean} if val is null/ignored returns value in the map, if val
-     *  is passed in returns val
-     */
-    constructor.encryptOnSave = function(id, val) {
-        if (EcEncryptedValue.encryptOnSaveMap == null) {
-            EcEncryptedValue.encryptOnSaveMap = {};
-        }
-        if (val == null) {
-            if (EcEncryptedValue.encryptOnSaveMap[id] != null) {
-                return EcEncryptedValue.encryptOnSaveMap[id];
-            } else {
-                return false;
-            }
-        } else {
-            EcEncryptedValue.encryptOnSaveMap[id] = val;
-            return val;
-        }
-    };
 }, {encryptOnSaveMap: {name: "Map", arguments: [null, null]}, secret: {name: "Array", arguments: [null]}, owner: {name: "Array", arguments: [null]}, signature: {name: "Array", arguments: [null]}, reader: {name: "Array", arguments: [null]}, atProperties: {name: "Array", arguments: [null]}}, {});
 /**
  *  A representation of a file.
- *  
+ * 
+ *  @author fritz.ray@eduworks.com
  *  @module com.eduworks.ec
  *  @class GeneralFile
  *  @extends EcRemoteLinkedData
  *  @constructor
- *  
- *  @author fritz.ray@eduworks.com
  */
 var GeneralFile = function() {
     EcRemoteLinkedData.call(this, General.context, GeneralFile.myType);
@@ -660,35 +657,35 @@ GeneralFile = stjs.extend(GeneralFile, EcRemoteLinkedData, [], function(construc
     /**
      *  Optional checksum of the file, used to verify if the file has been
      *  transmitted correctly.
-     *  
+     * 
      *  @property checksum
      *  @type String
      */
     prototype.checksum = null;
     /**
      *  Mime type of the file.
-     *  
+     * 
      *  @property mimeType
      *  @type String
      */
     prototype.mimeType = null;
     /**
      *  Base-64 encoded version of the bytestream of a file.
-     *  
+     * 
      *  @property data
      *  @type String
      */
     prototype.data = null;
     /**
      *  Name of the file, used to distinguish it
-     *  
+     * 
      *  @property name
      *  @type String
      */
     prototype.name = null;
     /**
      *  Helper method to force the browser to download the file.
-     *  
+     * 
      *  @memberOf GeneralFile
      *  @method download
      */
@@ -724,13 +721,408 @@ var EcRepository = function() {
     EcRepository.repos.push(this);
 };
 EcRepository = stjs.extend(EcRepository, null, [], function(constructor, prototype) {
-    prototype.selectedServer = null;
     constructor.caching = false;
     constructor.cachingSearch = false;
     constructor.unsigned = false;
+    constructor.alwaysTryUrl = false;
     constructor.cache = new Object();
     constructor.fetching = new Object();
     constructor.repos = new Array();
+    prototype.selectedServer = null;
+    prototype.autoDetectFound = false;
+    /**
+     *  Gets a JSON-LD object from the place designated by the URI.
+     *  <p>
+     *  Uses a signature sheet gathered from {@link EcIdentityManager}.
+     * 
+     *  @param {String}                               url URL of the remote object.
+     *  @param {Callback1<EcRemoteLinkedData>}success Event to call upon
+     *                                                successful retrieval.
+     *  @param {Callback1<String>}                    failure Event to call upon spectacular
+     *                                                failure.
+     *  @memberOf EcRepository
+     *  @method get
+     *  @static
+     */
+    constructor.get = function(url, success, failure) {
+        if (EcRepository.caching) {
+            if ((EcRepository.cache)[url] != null) {
+                if (EcRemote.async) {
+                    Task.immediate(function() {
+                        success((EcRepository.cache)[url]);
+                    });
+                } else {
+                    success((EcRepository.cache)[url]);
+                }
+                return;
+            }
+            if (EcRemote.async) {
+                if ((EcRepository.fetching)[url] != null) {
+                    if ((EcRepository.fetching)[url] > new Date().getTime()) {
+                        setTimeout(function() {
+                            EcRepository.get(url, success, failure);
+                        }, 100);
+                        return;
+                    }
+                }
+                (EcRepository.fetching)[url] = new Date().getTime() + 60000;
+            }
+        }
+        if (!EcRepository.shouldTryUrl(url)) {
+            EcRepository.find(url, "Could not locate object. May be due to EcRepository.alwaysTryUrl flag.", new Object(), 0, success, failure);
+            return;
+        }
+        var fd = new FormData();
+        if (EcRepository.unsigned) {
+            EcRemote.postExpectingObject(url, null, fd, function(p1) {
+                delete (EcRepository.fetching)[url];
+                var d = new EcRemoteLinkedData("", "");
+                d.copyFrom(p1);
+                if (d.getFullType() == null) {
+                    EcRepository.find(url, JSON.stringify(p1), new Object(), 0, success, failure);
+                    return;
+                }
+                if (EcRepository.caching) {
+                    (EcRepository.cache)[d.id] = d;
+                    (EcRepository.cache)[d.shortId()] = d;
+                }
+                success(d);
+            }, function(p1) {
+                EcRepository.find(url, p1, new Object(), 0, success, failure);
+            });
+        } else 
+            EcIdentityManager.signatureSheetAsync(60000, url, function(p1) {
+                if ((EcRepository.cache)[url] != null) {
+                    delete (EcRepository.fetching)[url];
+                    success((EcRepository.cache)[url]);
+                    return;
+                }
+                fd.append("signatureSheet", p1);
+                EcRemote.postExpectingObject(url, null, fd, function(p1) {
+                    delete (EcRepository.fetching)[url];
+                    var d = new EcRemoteLinkedData("", "");
+                    d.copyFrom(p1);
+                    if (d.getFullType() == null) {
+                        EcRepository.find(url, JSON.stringify(p1), new Object(), 0, success, failure);
+                        return;
+                    }
+                    if (EcRepository.caching) {
+                        (EcRepository.cache)[d.id] = d;
+                        (EcRepository.cache)[d.shortId()] = d;
+                    }
+                    success(d);
+                }, function(p1) {
+                    EcRepository.find(url, p1, new Object(), 0, success, failure);
+                });
+            });
+    };
+    constructor.shouldTryUrl = function(url) {
+        if (url == null) 
+            return false;
+        if (EcRepository.alwaysTryUrl) 
+            return true;
+        if (EcRepository.repos.length == 0) 
+            return true;
+        if (url.contains("/api/") || url.contains("/data/")) 
+            return true;
+        var validUrlFound = false;
+        for (var i = 0; i < EcRepository.repos.length; i++) {
+            if (EcRepository.repos[i].selectedServer == null) 
+                continue;
+            validUrlFound = true;
+        }
+        if (!validUrlFound) 
+            return true;
+        return false;
+    };
+    constructor.find = function(url, error, history, i, success, failure) {
+        if (isNaN(i) || i == undefined || i > EcRepository.repos.length || EcRepository.repos[i] == null) {
+            delete (EcRepository.fetching)[url];
+            if (failure != null) 
+                failure(error);
+            return;
+        }
+        var repo = EcRepository.repos[i];
+        if (repo.selectedServer == null) {
+            EcRepository.find(url, error, history, i + 1, success, failure);
+            return;
+        }
+        if (((history)[repo.selectedServer]) == true) {
+            EcRepository.find(url, error, history, i + 1, success, failure);
+            return;
+        }
+        (history)[repo.selectedServer] = true;
+        repo.search("@id:\"" + url + "\"", null, function(strings) {
+            if (strings == null || strings.length == 0) 
+                EcRepository.find(url, error, history, i + 1, success, failure);
+             else {
+                var done = false;
+                for (var i = 0; i < strings.length; i++) {
+                    if (strings[i].id == url) {
+                        if (done) 
+                            log("Searching for exact ID:" + url + ", found more than one@:" + repo.selectedServer);
+                        done = true;
+                        success(strings[i]);
+                    }
+                }
+            }
+        }, function(s) {
+            EcRepository.find(url, error, history, i + 1, success, failure);
+        });
+    };
+    constructor.findBlocking = function(url, error, history, i) {
+        if (i > EcRepository.repos.length || EcRepository.repos[i] == null) {
+            delete (EcRepository.fetching)[url];
+            return null;
+        }
+        var repo = EcRepository.repos[i];
+        if (((history)[repo.selectedServer]) == true) 
+            EcRepository.findBlocking(url, error, history, i + 1);
+        (history)[repo.selectedServer] = true;
+        var strings = repo.searchBlocking("@id:\"" + url + "\"");
+        if (strings == null || strings.length == 0) 
+            return EcRepository.findBlocking(url, error, history, i + 1);
+         else {
+            for (var j = 0; j < strings.length; j++) {
+                if (strings[j].id == url) {
+                    return strings[j];
+                }
+            }
+        }
+        return EcRepository.findBlocking(url, error, history, i + 1);
+    };
+    /**
+     *  Retrieves a piece of data synchronously from the server, blocking until
+     *  it is returned
+     * 
+     *  @param {String} url URL ID of the data to be retrieved
+     *  @return {EcRemoteLinkedData} Data retrieved, corresponding to the ID
+     *  @memberOf EcRepository
+     *  @method getBlocking
+     *  @static
+     */
+    constructor.getBlocking = function(url) {
+        if (url == null) 
+            return null;
+        if (EcRepository.caching) {
+            if ((EcRepository.cache)[url] != null) {
+                return (EcRepository.cache)[url];
+            }
+        }
+        if (!EcRepository.shouldTryUrl(url)) {
+            return EcRepository.findBlocking(url, "Could not locate object. May be due to EcRepository.alwaysTryUrl flag.", new Object(), 0);
+        }
+        var fd = new FormData();
+        var p1 = null;
+        if (EcRepository.unsigned == false) {
+            p1 = EcIdentityManager.signatureSheet(60000, url);
+            fd.append("signatureSheet", p1);
+        }
+        var oldAsync = EcRemote.async;
+        EcRemote.async = false;
+        EcRemote.postExpectingObject(url, null, fd, function(p1) {
+            var d = new EcRemoteLinkedData("", "");
+            d.copyFrom(p1);
+            if (d.getFullType() == null) {
+                EcRepository.findBlocking(url, JSON.stringify(p1), new Object(), 0);
+                return;
+            }
+            (EcRepository.cache)[url] = d;
+        }, function(s) {
+            (EcRepository.cache)[url] = EcRepository.findBlocking(url, s, new Object(), 0);
+        });
+        EcRemote.async = oldAsync;
+        var result = (EcRepository.cache)[url];
+        if (!EcRepository.caching) {
+            (EcRepository.cache)[url] = null;
+        }
+        return result;
+    };
+    /**
+     *  Escapes a search query
+     * 
+     *  @param {String} query Query string to escape
+     *  @return {String} Escaped query string
+     *  @memberOf EcRepository
+     *  @method escapeSearch
+     *  @static
+     */
+    constructor.escapeSearch = function(query) {
+        var s = null;
+        s = (query.split("\\")).join("\\\\");
+        s = (s.split("-")).join("\\-");
+        s = (s.split("=")).join("\\=");
+        s = (s.split("&&")).join("\\&&");
+        s = (s.split("||")).join("\\||");
+        s = (s.split("<")).join("\\<");
+        s = (s.split(">")).join("\\>");
+        s = (s.split("|")).join("\\|");
+        s = (s.split("(")).join("\\(");
+        s = (s.split(")")).join("\\)");
+        s = (s.split("{")).join("\\{");
+        s = (s.split("}")).join("\\}");
+        s = (s.split("[")).join("\\[");
+        s = (s.split("]")).join("\\]");
+        s = (s.split("^")).join("\\^");
+        s = (s.split("\"")).join("\\\"");
+        s = (s.split("~")).join("\\~");
+        s = (s.split("*")).join("\\*");
+        s = (s.split("?")).join("\\?");
+        s = (s.split(":")).join("\\:");
+        s = (s.split("/")).join("\\/");
+        s = (s.split("+")).join("\\+");
+        return s;
+    };
+    /**
+     *  Attempts to save a piece of data. Does some checks before saving to
+     *  ensure the data is valid. Warns the developer that they are using the
+     *  repository save function rather than an object specific version, this can
+     *  be avoided by calling _save
+     *  <p>
+     *  Uses a signature sheet informed by the owner field of the data.
+     * 
+     *  @param {EcRemoteLinkedData} data Data to save to the location designated
+     *                              by its id.
+     *  @param {Callback1<String>}  success Callback triggered on successful save
+     *  @param {Callback1<String>}  failure Callback triggered if error during
+     *                              save
+     *  @memberOf EcRepository
+     *  @method save
+     *  @static
+     */
+    constructor.save = function(data, success, failure) {
+        EcRepository._save(data, success, failure);
+    };
+    /**
+     *  Attempts to save a piece of data. Does some checks before saving to
+     *  ensure the data is valid. This version does not send a console warning,
+     *  <p>
+     *  Uses a signature sheet informed by the owner field of the data.
+     * 
+     *  @param {EcRemoteLinkedData} data Data to save to the location designated
+     *                              by its id.
+     *  @param {Callback1<String>}  success Callback triggered on successful save
+     *  @param {Callback1<String>}  failure Callback triggered if error during
+     *                              save
+     *  @memberOf EcRepository
+     *  @method _save
+     *  @static
+     */
+    constructor._save = function(data, success, failure) {
+        if (data.invalid()) {
+            var msg = "Cannot save data. It is missing a vital component.";
+            if (failure != null) {
+                failure(msg);
+            } else {
+                console.error(msg);
+            }
+            return;
+        }
+        if (data.reader != null && data.reader.length == 0) {
+            delete (data)["reader"];
+        }
+        if (data.owner != null && data.owner.length == 0) {
+            delete (data)["owner"];
+        }
+        if (EcEncryptedValue.encryptOnSave(data.id, null)) {
+            var encrypted = EcEncryptedValue.toEncryptedValue(data, false);
+            EcIdentityManager.sign(data);
+            EcRepository._saveWithoutSigning(data, success, failure);
+        } else {
+            EcIdentityManager.sign(data);
+            EcRepository._saveWithoutSigning(data, success, failure);
+        }
+    };
+    /**
+     *  Attempts to save a piece of data without signing it.
+     *  <p>
+     *  Uses a signature sheet informed by the owner field of the data.
+     * 
+     *  @param {EcRemoteLinkedData} data Data to save to the location designated
+     *                              by its id.
+     *  @param {Callback1<String>}  success Callback triggered on successful save
+     *  @param {Callback1<String>}  failure Callback triggered if error during
+     *                              save
+     *  @memberOf EcRepository
+     *  @method _saveWithoutSigning
+     *  @static
+     */
+    constructor._saveWithoutSigning = function(data, success, failure) {
+        if (EcRepository.caching) {
+            delete (EcRepository.cache)[data.id];
+            delete (EcRepository.cache)[data.shortId()];
+        }
+        if (data.invalid()) {
+            failure("Data is malformed.");
+            return;
+        }
+        data.updateTimestamp();
+        var fd = new FormData();
+        fd.append("data", data.toJson());
+        if (EcRemote.async == false) {
+            if (data.owner != null && data.owner.length > 0) {
+                var arg0 = EcIdentityManager.signatureSheetFor(data.owner, 60000, data.id);
+                fd.append("signatureSheet", arg0);
+                EcRemote.postExpectingString(data.id, "", fd, success, failure);
+            } else {
+                var arg0 = EcIdentityManager.signatureSheet(60000, data.id);
+                fd.append("signatureSheet", arg0);
+                EcRemote.postExpectingString(data.id, "", fd, success, failure);
+            }
+        } else if (data.owner != null && data.owner.length > 0) {
+            EcIdentityManager.signatureSheetForAsync(data.owner, 60000, data.id, function(arg0) {
+                fd.append("signatureSheet", arg0);
+                EcRemote.postExpectingString(data.id, "", fd, success, failure);
+            });
+        } else {
+            EcIdentityManager.signatureSheetAsync(60000, data.id, function(arg0) {
+                fd.append("signatureSheet", arg0);
+                EcRemote.postExpectingString(data.id, "", fd, success, failure);
+            });
+        }
+    };
+    /**
+     *  Attempts to delete a piece of data.
+     *  <p>
+     *  Uses a signature sheet informed by the owner field of the data.
+     * 
+     *  @param {EcRemoteLinkedData} data Data to save to the location designated
+     *                              by its id.
+     *  @param {Callback1<String>}  success Callback triggered on successful
+     *                              delete
+     *  @param {Callback1<String>}  failure Callback triggered if error during
+     *                              delete
+     *  @memberOf EcRepository
+     *  @method _delete
+     *  @static
+     */
+    constructor._delete = function(data, success, failure) {
+        EcRepository.DELETE(data, success, failure);
+    };
+    /**
+     *  Attempts to delete a piece of data.
+     *  <p>
+     *  Uses a signature sheet informed by the owner field of the data.
+     * 
+     *  @param {EcRemoteLinkedData} data Data to save to the location designated
+     *                              by its id.
+     *  @param {Callback1<String>}  success Callback triggered on successful
+     *                              delete
+     *  @param {Callback1<String>}  failure Callback triggered if error during
+     *                              delete
+     *  @memberOf EcRepository
+     *  @method DELETE
+     *  @static
+     */
+    constructor.DELETE = function(data, success, failure) {
+        if (EcRepository.caching) {
+            delete (EcRepository.cache)[data.id];
+            delete (EcRepository.cache)[data.shortId()];
+        }
+        EcIdentityManager.signatureSheetForAsync(data.owner, 60000, data.id, function(signatureSheet) {
+            EcRemote._delete(data.shortId(), signatureSheet, success, failure);
+        });
+    };
     /**
      *  Retrieves data from the server and caches it for use later during the
      *  application. This should be called before the data is needed if possible,
@@ -800,185 +1192,6 @@ EcRepository = stjs.extend(EcRepository, null, [], function(constructor, prototy
                     }
                 }, null);
             });
-    };
-    /**
-     *  Gets a JSON-LD object from the place designated by the URI.
-     *  <p>
-     *  Uses a signature sheet gathered from {@link EcIdentityManager}.
-     * 
-     *  @param {String}                               url URL of the remote object.
-     *  @param {Callback1<EcRemoteLinkedData>}success Event to call upon
-     *                                                successful retrieval.
-     *  @param {Callback1<String>}                    failure Event to call upon spectacular
-     *                                                failure.
-     *  @memberOf EcRepository
-     *  @method get
-     *  @static
-     */
-    constructor.get = function(url, success, failure) {
-        if (EcRepository.caching) {
-            if ((EcRepository.cache)[url] != null) {
-                if (EcRemote.async) {
-                    Task.immediate(function() {
-                        success((EcRepository.cache)[url]);
-                    });
-                } else {
-                    success((EcRepository.cache)[url]);
-                }
-                return;
-            }
-            if (EcRemote.async) {
-                if ((EcRepository.fetching)[url] != null) {
-                    if ((EcRepository.fetching)[url] > new Date().getTime()) {
-                        setTimeout(function() {
-                            EcRepository.get(url, success, failure);
-                        }, 100);
-                        return;
-                    }
-                }
-                (EcRepository.fetching)[url] = new Date().getTime() + 60000;
-            }
-        }
-        var fd = new FormData();
-        if (EcRepository.unsigned) {
-            EcRemote.postExpectingObject(url, null, fd, function(p1) {
-                delete (EcRepository.fetching)[url];
-                var d = new EcRemoteLinkedData("", "");
-                d.copyFrom(p1);
-                if (d.getFullType() == null) {
-                    EcRepository.find(url, JSON.stringify(p1), new Object(), 0, success, failure);
-                    return;
-                }
-                if (EcRepository.caching) {
-                    (EcRepository.cache)[d.id] = d;
-                    (EcRepository.cache)[d.shortId()] = d;
-                }
-                success(d);
-            }, function(p1) {
-                EcRepository.find(url, p1, new Object(), 0, success, failure);
-            });
-        } else 
-            EcIdentityManager.signatureSheetAsync(60000, url, function(p1) {
-                if ((EcRepository.cache)[url] != null) {
-                    delete (EcRepository.fetching)[url];
-                    success((EcRepository.cache)[url]);
-                    return;
-                }
-                fd.append("signatureSheet", p1);
-                EcRemote.postExpectingObject(url, null, fd, function(p1) {
-                    delete (EcRepository.fetching)[url];
-                    var d = new EcRemoteLinkedData("", "");
-                    d.copyFrom(p1);
-                    if (d.getFullType() == null) {
-                        EcRepository.find(url, JSON.stringify(p1), new Object(), 0, success, failure);
-                        return;
-                    }
-                    if (EcRepository.caching) {
-                        (EcRepository.cache)[d.id] = d;
-                        (EcRepository.cache)[d.shortId()] = d;
-                    }
-                    success(d);
-                }, function(p1) {
-                    EcRepository.find(url, p1, new Object(), 0, success, failure);
-                });
-            });
-    };
-    constructor.find = function(url, error, history, i, success, failure) {
-        if (i > EcRepository.repos.length) {
-            delete (EcRepository.fetching)[url];
-            failure(error);
-            return;
-        }
-        var repo = EcRepository.repos[i];
-        if (repo.selectedServer == null) {
-            EcRepository.find(url, error, history, i + 1, success, failure);
-            return;
-        }
-        if (((history)[repo.selectedServer]) == true) {
-            EcRepository.find(url, error, history, i + 1, success, failure);
-            return;
-        }
-        (history)[repo.selectedServer] = true;
-        repo.search("@id:\"" + url + "\"", null, function(strings) {
-            if (strings == null || strings.length == 0) 
-                EcRepository.find(url, error, history, i + 1, success, failure);
-             else {
-                var done = false;
-                for (var i = 0; i < strings.length; i++) {
-                    if (strings[i].id == url) {
-                        if (done) 
-                            log("Searching for exact ID:" + url + ", found more than one@:" + repo.selectedServer);
-                        done = true;
-                        success(strings[i]);
-                    }
-                }
-            }
-        }, function(s) {
-            EcRepository.find(url, error, history, i + 1, success, failure);
-        });
-    };
-    constructor.findBlocking = function(url, error, history, i) {
-        if (i > EcRepository.repos.length) {
-            delete (EcRepository.fetching)[url];
-            return null;
-        }
-        var repo = EcRepository.repos[i];
-        if (((history)[repo.selectedServer]) == true) 
-            EcRepository.findBlocking(url, error, history, i + 1);
-        (history)[repo.selectedServer] = true;
-        var strings = repo.searchBlocking("@id:\"" + url + "\"");
-        if (strings == null || strings.length == 0) 
-            return EcRepository.findBlocking(url, error, history, i + 1);
-         else {
-            for (var j = 0; j < strings.length; j++) {
-                if (strings[j].id == url) {
-                    return strings[j];
-                }
-            }
-        }
-        return EcRepository.findBlocking(url, error, history, i + 1);
-    };
-    /**
-     *  Retrieves a piece of data synchronously from the server, blocking until
-     *  it is returned
-     * 
-     *  @param {String} url URL ID of the data to be retrieved
-     *  @return {EcRemoteLinkedData} Data retrieved, corresponding to the ID
-     *  @memberOf EcRepository
-     *  @method getBlocking
-     *  @static
-     */
-    constructor.getBlocking = function(url) {
-        if (EcRepository.caching) {
-            if ((EcRepository.cache)[url] != null) {
-                return (EcRepository.cache)[url];
-            }
-        }
-        var fd = new FormData();
-        var p1 = null;
-        if (EcRepository.unsigned == false) {
-            p1 = EcIdentityManager.signatureSheet(60000, url);
-            fd.append("signatureSheet", p1);
-        }
-        var oldAsync = EcRemote.async;
-        EcRemote.async = false;
-        EcRemote.postExpectingObject(url, null, fd, function(p1) {
-            var d = new EcRemoteLinkedData("", "");
-            d.copyFrom(p1);
-            if (d.getFullType() == null) {
-                EcRepository.findBlocking(url, JSON.stringify(p1), new Object(), 0);
-                return;
-            }
-            (EcRepository.cache)[url] = d;
-        }, function(s) {
-            (EcRepository.cache)[url] = EcRepository.findBlocking(url, s, new Object(), 0);
-        });
-        EcRemote.async = oldAsync;
-        var result = (EcRepository.cache)[url];
-        if (!EcRepository.caching) {
-            (EcRepository.cache)[url] = null;
-        }
-        return result;
     };
     /**
      *  Gets a JSON-LD object from the place designated by the URI.
@@ -1413,7 +1626,6 @@ EcRepository = stjs.extend(EcRepository, null, [], function(constructor, prototy
         }
         EcRemote.async = true;
     };
-    prototype.autoDetectFound = false;
     /**
      *  Handles the actual detection of repository endpoint /ping service
      * 
@@ -1579,191 +1791,6 @@ EcRepository = stjs.extend(EcRepository, null, [], function(constructor, prototy
         return results;
     };
     /**
-     *  Escapes a search query
-     * 
-     *  @param {String} query Query string to escape
-     *  @return {String} Escaped query string
-     *  @memberOf EcRepository
-     *  @method escapeSearch
-     *  @static
-     */
-    constructor.escapeSearch = function(query) {
-        var s = null;
-        s = (query.split("\\")).join("\\\\");
-        s = (s.split("-")).join("\\-");
-        s = (s.split("=")).join("\\=");
-        s = (s.split("&&")).join("\\&&");
-        s = (s.split("||")).join("\\||");
-        s = (s.split("<")).join("\\<");
-        s = (s.split(">")).join("\\>");
-        s = (s.split("|")).join("\\|");
-        s = (s.split("(")).join("\\(");
-        s = (s.split(")")).join("\\)");
-        s = (s.split("{")).join("\\{");
-        s = (s.split("}")).join("\\}");
-        s = (s.split("[")).join("\\[");
-        s = (s.split("]")).join("\\]");
-        s = (s.split("^")).join("\\^");
-        s = (s.split("\"")).join("\\\"");
-        s = (s.split("~")).join("\\~");
-        s = (s.split("*")).join("\\*");
-        s = (s.split("?")).join("\\?");
-        s = (s.split(":")).join("\\:");
-        s = (s.split("/")).join("\\/");
-        s = (s.split("+")).join("\\+");
-        return s;
-    };
-    /**
-     *  Attempts to save a piece of data. Does some checks before saving to
-     *  ensure the data is valid. Warns the developer that they are using the
-     *  repository save function rather than an object specific version, this can
-     *  be avoided by calling _save
-     *  <p>
-     *  Uses a signature sheet informed by the owner field of the data.
-     * 
-     *  @param {EcRemoteLinkedData} data Data to save to the location designated
-     *                              by its id.
-     *  @param {Callback1<String>}  success Callback triggered on successful save
-     *  @param {Callback1<String>}  failure Callback triggered if error during
-     *                              save
-     *  @memberOf EcRepository
-     *  @method save
-     *  @static
-     */
-    constructor.save = function(data, success, failure) {
-        EcRepository._save(data, success, failure);
-    };
-    /**
-     *  Attempts to save a piece of data. Does some checks before saving to
-     *  ensure the data is valid. This version does not send a console warning,
-     *  <p>
-     *  Uses a signature sheet informed by the owner field of the data.
-     * 
-     *  @param {EcRemoteLinkedData} data Data to save to the location designated
-     *                              by its id.
-     *  @param {Callback1<String>}  success Callback triggered on successful save
-     *  @param {Callback1<String>}  failure Callback triggered if error during
-     *                              save
-     *  @memberOf EcRepository
-     *  @method _save
-     *  @static
-     */
-    constructor._save = function(data, success, failure) {
-        if (data.invalid()) {
-            var msg = "Cannot save data. It is missing a vital component.";
-            if (failure != null) {
-                failure(msg);
-            } else {
-                console.error(msg);
-            }
-            return;
-        }
-        if (data.reader != null && data.reader.length == 0) {
-            delete (data)["reader"];
-        }
-        if (data.owner != null && data.owner.length == 0) {
-            delete (data)["owner"];
-        }
-        if (EcEncryptedValue.encryptOnSave(data.id, null)) {
-            var encrypted = EcEncryptedValue.toEncryptedValue(data, false);
-            EcIdentityManager.sign(data);
-            EcRepository._saveWithoutSigning(data, success, failure);
-        } else {
-            EcIdentityManager.sign(data);
-            EcRepository._saveWithoutSigning(data, success, failure);
-        }
-    };
-    /**
-     *  Attempts to save a piece of data without signing it.
-     *  <p>
-     *  Uses a signature sheet informed by the owner field of the data.
-     * 
-     *  @param {EcRemoteLinkedData} data Data to save to the location designated
-     *                              by its id.
-     *  @param {Callback1<String>}  success Callback triggered on successful save
-     *  @param {Callback1<String>}  failure Callback triggered if error during
-     *                              save
-     *  @memberOf EcRepository
-     *  @method _saveWithoutSigning
-     *  @static
-     */
-    constructor._saveWithoutSigning = function(data, success, failure) {
-        if (EcRepository.caching) {
-            delete (EcRepository.cache)[data.id];
-            delete (EcRepository.cache)[data.shortId()];
-        }
-        if (data.invalid()) {
-            failure("Data is malformed.");
-            return;
-        }
-        data.updateTimestamp();
-        var fd = new FormData();
-        fd.append("data", data.toJson());
-        if (EcRemote.async == false) {
-            if (data.owner != null && data.owner.length > 0) {
-                var arg0 = EcIdentityManager.signatureSheetFor(data.owner, 60000, data.id);
-                fd.append("signatureSheet", arg0);
-                EcRemote.postExpectingString(data.id, "", fd, success, failure);
-            } else {
-                var arg0 = EcIdentityManager.signatureSheet(60000, data.id);
-                fd.append("signatureSheet", arg0);
-                EcRemote.postExpectingString(data.id, "", fd, success, failure);
-            }
-        } else if (data.owner != null && data.owner.length > 0) {
-            EcIdentityManager.signatureSheetForAsync(data.owner, 60000, data.id, function(arg0) {
-                fd.append("signatureSheet", arg0);
-                EcRemote.postExpectingString(data.id, "", fd, success, failure);
-            });
-        } else {
-            EcIdentityManager.signatureSheetAsync(60000, data.id, function(arg0) {
-                fd.append("signatureSheet", arg0);
-                EcRemote.postExpectingString(data.id, "", fd, success, failure);
-            });
-        }
-    };
-    /**
-     *  Attempts to delete a piece of data.
-     *  <p>
-     *  Uses a signature sheet informed by the owner field of the data.
-     * 
-     *  @param {EcRemoteLinkedData} data Data to save to the location designated
-     *                              by its id.
-     *  @param {Callback1<String>}  success Callback triggered on successful
-     *                              delete
-     *  @param {Callback1<String>}  failure Callback triggered if error during
-     *                              delete
-     *  @memberOf EcRepository
-     *  @method _delete
-     *  @static
-     */
-    constructor._delete = function(data, success, failure) {
-        EcRepository.DELETE(data, success, failure);
-    };
-    /**
-     *  Attempts to delete a piece of data.
-     *  <p>
-     *  Uses a signature sheet informed by the owner field of the data.
-     * 
-     *  @param {EcRemoteLinkedData} data Data to save to the location designated
-     *                              by its id.
-     *  @param {Callback1<String>}  success Callback triggered on successful
-     *                              delete
-     *  @param {Callback1<String>}  failure Callback triggered if error during
-     *                              delete
-     *  @memberOf EcRepository
-     *  @method DELETE
-     *  @static
-     */
-    constructor.DELETE = function(data, success, failure) {
-        if (EcRepository.caching) {
-            delete (EcRepository.cache)[data.id];
-            delete (EcRepository.cache)[data.shortId()];
-        }
-        EcIdentityManager.signatureSheetAsync(60000, data.id, function(signatureSheet) {
-            EcRemote._delete(data.shortId(), signatureSheet, success, failure);
-        });
-    };
-    /**
      *  Fetches the admin keys from the server to compare for check if current
      *  user is an admin user
      * 
@@ -1791,66 +1818,31 @@ EcRepository = stjs.extend(EcRepository, null, [], function(constructor, prototy
 }, {cache: "Object", fetching: "Object", repos: {name: "Array", arguments: ["EcRepository"]}}, {});
 /**
  *  Implementation of a file with methods for communicating with repository services
- *  
+ * 
+ *  @author devlin.junker@eduworks.com
  *  @module com.eduworks.ec
  *  @class EcFile
  *  @extends GeneralFile
  *  @constructor
- *  
- *  @author devlin.junker@eduworks.com
  */
 var EcFile = function() {
     GeneralFile.call(this);
 };
 EcFile = stjs.extend(EcFile, GeneralFile, [], function(constructor, prototype) {
     /**
-     *  Saves this file in the repository using the repository web services
-     *  
-     *  @memberOf EcFile
-     *  @method save
-     *  @param {Callback1<String>} success
-     *  			Callback triggered if successfully saved
-     *  @param {Callback1<String>} failure
-     *  			Callback triggered if error occurs while saving
-     */
-    prototype.save = function(success, failure) {
-        if (this.name == null || this.name == "") {
-            var msg = "Competency Name can not be empty";
-            if (failure != null) 
-                failure(msg);
-             else 
-                console.error(msg);
-            return;
-        }
-        EcRepository._save(this, success, failure);
-    };
-    /**
-     *  Deletes the file from the repository using repository web services
-     *  
-     *  @memberOf EcFile
-     *  @method _delete
-     *  @param {Callback1<String>} success
-     *  			Callback triggered if successfully deleted
-     *  @param {Callback1<String>} failure
-     *  			Callback triggered if error occurs while deleting
-     */
-    prototype._delete = function(success, failure) {
-        EcRepository.DELETE(this, success, failure);
-    };
-    /**
      *  Factory method for creating a file with certain values
-     *  
+     * 
+     *  @param {String} name
+     *                  Name of the file to be created
+     *  @param {String} base64Data
+     *                  Base 64 encoded file data
+     *  @param {String} mimeType
+     *                  MIME Type of the file
+     *  @return {EcFile}
+     *  The file created
      *  @memberOf EcFile
      *  @method create
      *  @static
-     *  @param {String} name
-     *  			Name of the file to be created
-     *  @param {String} base64Data
-     *  			Base 64 encoded file data
-     *  @param {String} mimeType
-     *  			MIME Type of the file
-     *  @return {EcFile}
-     *  			The file created
      */
     constructor.create = function(name, base64Data, mimeType) {
         var f = new EcFile();
@@ -1861,17 +1853,17 @@ EcFile = stjs.extend(EcFile, GeneralFile, [], function(constructor, prototype) {
     };
     /**
      *  Retrieves a file from the server specified by it's ID
-     *  
+     * 
+     *  @param {String}            id
+     *                             ID of the file data to be retrieved
+     *  @param {Callback1<EcFile>} success
+     *                             Callback triggered if successfully retrieved from the server,
+     *                             returns the retrieved file
+     *  @param {Callback1<String>} failure
+     *                             Callback triggered if error occurs while retrieving file from server
      *  @memberOf EcFile
      *  @method get
      *  @static
-     *  @param {String} id
-     *  			ID of the file data to be retrieved
-     *  @param {Callback1<EcFile>} success
-     *  			Callback triggered if successfully retrieved from the server,
-     *  			returns the retrieved file
-     *  @param {Callback1<String>} failure
-     *  			Callback triggered if error occurs while retrieving file from server
      */
     constructor.get = function(id, success, failure) {
         EcRepository.get(id, function(p1) {
@@ -1895,23 +1887,23 @@ EcFile = stjs.extend(EcFile, GeneralFile, [], function(constructor, prototype) {
     };
     /**
      *  Searches the repository given for files that match the query passed in
-     *  
+     * 
+     *  @param {EcRepository}       repo
+     *                              Repository to search for files
+     *  @param {String}             query
+     *                              Query to user for search
+     *  @param {Callback1<EcFile[]> success
+     *                              Callback triggered after search completes,
+     *                              returns results
+     *  @param {Callback1<String>}  failure
+     *                              Callback triggered if error occurs while searching
+     *  @param {Object}             paramObj
+     *                              Parameters to pass to search
+     *  @param start
+     *  @param size
      *  @memberOf EcFile
      *  @method search
      *  @static
-     *  @param {EcRepository} repo
-     *  			Repository to search for files
-     *  @param {String} query
-     *  			Query to user for search
-     *  @param {Callback1<EcFile[]> success
-     *  			Callback triggered after search completes,
-     *  			returns results
-     *  @param {Callback1<String>} failure
-     *  			Callback triggered if error occurs while searching
-     *  @param {Object} paramObj
-     *  			Parameters to pass to search
-     *  		@param start
-     *  		@param size
      */
     constructor.search = function(repo, query, success, failure, paramObj) {
         var queryAdd = "";
@@ -1941,5 +1933,39 @@ EcFile = stjs.extend(EcFile, GeneralFile, [], function(constructor, prototype) {
                 success(ret);
             }
         }, failure);
+    };
+    /**
+     *  Saves this file in the repository using the repository web services
+     * 
+     *  @param {Callback1<String>} success
+     *                             Callback triggered if successfully saved
+     *  @param {Callback1<String>} failure
+     *                             Callback triggered if error occurs while saving
+     *  @memberOf EcFile
+     *  @method save
+     */
+    prototype.save = function(success, failure) {
+        if (this.name == null || this.name == "") {
+            var msg = "Competency Name can not be empty";
+            if (failure != null) 
+                failure(msg);
+             else 
+                console.error(msg);
+            return;
+        }
+        EcRepository._save(this, success, failure);
+    };
+    /**
+     *  Deletes the file from the repository using repository web services
+     * 
+     *  @param {Callback1<String>} success
+     *                             Callback triggered if successfully deleted
+     *  @param {Callback1<String>} failure
+     *                             Callback triggered if error occurs while deleting
+     *  @memberOf EcFile
+     *  @method _delete
+     */
+    prototype._delete = function(success, failure) {
+        EcRepository.DELETE(this, success, failure);
     };
 }, {owner: {name: "Array", arguments: [null]}, signature: {name: "Array", arguments: [null]}, reader: {name: "Array", arguments: [null]}, atProperties: {name: "Array", arguments: [null]}}, {});
