@@ -21,14 +21,16 @@ function searchFrameworks() {
     if (searchTerm == null || searchTerm == "")
         searchTerm = "*";
     hideAll();
-    $("#frameworks").html("");
-    searchCompetencies = [];
-    for (var i = 0; i < servers.length; i++) {
-        frameworkSearch(servers[i], searchTerm);
-        if (searchTerm != "*") {
-            frameworkSearchByCompetency(servers[i], searchTerm);
+    setTimeout(function () {
+        $("#frameworks").html("");
+        searchCompetencies = [];
+        for (var i = 0; i < servers.length; i++) {
+            frameworkSearch(servers[i], searchTerm);
+            if (searchTerm != "*") {
+                frameworkSearchByCompetency(servers[i], searchTerm);
+            }
         }
-    }
+    }, 500);
 }
 
 function frameworkSearchByCompetency(server, searchTerm) {
@@ -67,11 +69,11 @@ function frameworkSearch(server, searchTerm, subsearchTerm) {
                 p.attr("subsearch", subsearchTerm);
                 p.click(click);
                 var title = p.children().first();
-                title.text(framework.name);
+                title.text(framework.getName());
                 if (subsearchTerm != null)
                     p.prepend("<span style='float:right'>*Matches inside. <span>");
                 var desc = p.children().last();
-                desc.text(framework.description);
+                desc.text(framework.getDescription());
                 if (searchTerm != "*" && subsearchTerm == null)
                     p.mark(searchTerm);
             }
@@ -99,9 +101,13 @@ function click(evt) {
     var subsearchTerm = $(evt.target).attr("subsearch");
     if (subsearchTerm == null)
         subsearchTerm = $(evt.target).parent().attr("subsearch");
+    if (subsearchTerm == null)
+        subsearchTerm = $(evt.target).parent().parent().attr("subsearch");
     frameworkId = $(evt.target).attr("id");
     if (frameworkId == null)
         frameworkId = $(evt.target).parent().attr("id");
+    if (frameworkId == null)
+        frameworkId = $(evt.target).parent().parent().attr("id");
     repo = null;
     $("#mainbar").find("#loading").show();
     $("#tree").hide();
@@ -126,8 +132,8 @@ function refreshFramework(subsearch) {
     var me = this;
     $("#tree").html("");
     me.fetches = 0;
-    EcRepository.get(frameworkId, function (framework) {
-        $("#title").text(framework.name);
+    EcFramework.get(frameworkId, function (framework) {
+        $("#title").text(framework.getName());
         if (framework.competency == null)
             framework.competency = [];
         if (framework.relation == null)
@@ -156,10 +162,10 @@ function refreshFramework(subsearch) {
                         var treeNode = $("#tree").append("<li class = 'competency'><ul></ul></li>").children().last();
                         treeNode.attr("id", competency.shortId());
                         if (competency.description != null && competency.description != "NULL" && competency.description != competency.name)
-                            treeNode.prepend("<small/>").children().first().text(competency.description);
+                            treeNode.prepend("<small/>").children().first().text(competency.getDescription());
                         if (queryParams.link == "true")
                             treeNode.prepend(" <a target='_blank'>🔗</a>").children().first().attr("href", competency.shortId());
-                        treeNode.prepend("<span/>").children().first().text(competency.name).click(function (evt) {
+                        treeNode.prepend("<span/>").children().first().text(competency.getName()).click(function (evt) {
                             $(evt.target).parent().children("ul").slideToggle();
                         });
                         if (queryParams.select != null)
@@ -171,8 +177,8 @@ function refreshFramework(subsearch) {
                             treeNode.mark(subsearch);
                         if (me.fetches == 0) {
                             if (framework.relation != undefined && framework.relation.length > 0) {
+                                me.fetches += framework.relation.length;
                                 for (var i = 0; i < framework.relation.length; i++) {
-                                    me.fetches++;
                                     EcAlignment.get(framework.relation[i], function (relation) {
                                         me.fetches--;
                                         if (relation.source !== undefined) {
@@ -180,8 +186,8 @@ function refreshFramework(subsearch) {
                                                 $("[id=\"" + relation.target + "\"]").children().last().append($("[id=\"" + relation.source + "\"]"));
                                             }
                                             if (me.fetches == 0) {
+                                                me.fetches += framework.relation.length;
                                                 for (var i = 0; i < framework.relation.length; i++) {
-                                                    me.fetches++;
                                                     EcAlignment.get(framework.relation[i], function (relation) {
                                                         me.fetches--;
                                                         if (relation.source !== undefined) {
@@ -217,19 +223,33 @@ function refreshFramework(subsearch) {
 
 
 function showAll() {
-    $("#mainbar").find("#loading").hide({
+    var now = 1000 - (new Date().getTime() - ms);
+    if (now < 0)
+        now = 0;
+    $("#mainbar").find("#loading").delay(now).hide({
         complete: function () {
-            $("#tree").show({});
+            $("#tree").show({
+                complete: function () {
+                    $("#mainbar").find("#loading").hide();
+                }
+            });
         }
     });
-    $("#sidebar").find("#loading").hide({
+    $("#sidebar").find("#loading").delay(now).hide({
         complete: function () {
-            $("#frameworks").show({});
+            $("#frameworks").show({
+                complete: function () {
+                    $("#sidebar").find("#loading").hide();
+                }
+            });
         }
     });
 }
 
+var ms = 0;
+
 function hideAll() {
+    ms = new Date().getTime();
     $("#tree").hide({
         complete: function () {
             $("#sidebar").find("#loading").show({});
