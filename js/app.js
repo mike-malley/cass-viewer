@@ -156,10 +156,10 @@ function refreshFramework(subsearch) {
                         var treeNode = $("#tree").append("<li class = 'competency'><ul></ul></li>").children().last();
                         treeNode.attr("id", competency.shortId());
                         if (competency.description != null && competency.description != "NULL" && competency.description != competency.name)
-                            treeNode.prepend("<small>" + competency.description + "</small>");
+                            treeNode.prepend("<small/>").children().first().text(competency.description);
                         if (queryParams.link == "true")
-                            treeNode.prepend(" <a target='_blank' href='" + competency.shortId() + "'>🔗</a>");
-                        treeNode.prepend("<span>" + competency.name + "</span>").children().first().click(function (evt) {
+                            treeNode.prepend(" <a target='_blank'>🔗</a>").children().first().attr("href", competency.shortId());
+                        treeNode.prepend("<span/>").children().first().text(competency.name).click(function (evt) {
                             $(evt.target).parent().children("ul").slideToggle();
                         });
                         if (queryParams.select != null)
@@ -248,37 +248,6 @@ $("#search").keyup(function (event) {
     }
     return false;
 });
-
-window.onload = function () {
-    if (parent != window) {
-        importParentStyles();
-        var oHead = document.getElementsByTagName("head")[0];
-        var arrStyleSheets = parent.document.getElementsByTagName("style");
-        for (var i = 0; i < arrStyleSheets.length; i++)
-            oHead.appendChild(arrStyleSheets[i].cloneNode(true));
-    }
-}
-
-function importParentStyles() {
-    var parentStyleSheets = parent.document.styleSheets;
-    var cssString = "";
-    for (var i = 0, count = parentStyleSheets.length; i < count; ++i) {
-        if (parentStyleSheets[i].cssRules) {
-            var cssRules = parentStyleSheets[i].cssRules;
-            for (var j = 0, countJ = cssRules.length; j < countJ; ++j)
-                cssString += cssRules[j].cssText;
-        } else
-            cssString += parentStyleSheets[i].cssText; // IE8 and earlier
-    }
-    var style = document.createElement("style");
-    style.type = "text/css";
-    try {
-        style.innerHTML = cssString;
-    } catch (ex) {
-        style.styleSheet.cssText = cssString; // IE8 and earlier
-    }
-    document.getElementsByTagName("head")[0].appendChild(style);
-}
 
 $("#sidebar").show({});
 searchFrameworks();
