@@ -8,73 +8,81 @@
  Unless required by applicable law or agreed to in writing, software distributed under the License is distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the License for the specific language governing permissions and limitations under the License.
 */
 
-queryParams = function () {
-    if (window.document.location.search == null)
-        return {};
-    var hashSplit = (window.document.location.search.split("?"));
-    if (hashSplit.length > 1) {
-        var o = {};
-        var paramString = hashSplit[1];
-        var parts = (paramString).split("&");
-        for (var i = 0; i < parts.length; i++)
-            o[parts[i].split("=")[0]] = decodeURIComponent(parts[i].replace(parts[i].split("=")[0] + "=", ""));
-        return o;
-    }
-    return {};
-};
-queryParams = queryParams();
 if (queryParams.select == "true")
-    $("#selectButton").show();
+    $("#selectButton").css("visibility", "visible");
 if (queryParams.select != null)
     $("#selectButton").show().text(queryParams.select);
 
-var repo = new EcRepository();
-repo.selectedServer = "";
+var loading = 0;
+var searchCompetencies = [];
 
-EcRepository.caching = true;
-
-var frameworkId = "";
-
-var servers = ["https://sandbox.cassproject.org/api/custom"];
-
-if (queryParams.server != null)
-    servers = [queryParams.server];
-
-for (var i = 0; i < servers.length; i++) {
-    var r = new EcRepository();
-    r.selectedServer = servers[i];
-//    r.autoDetectRepository();
-    servers[i] = r;
-}
-
-var repos = [];
-
-function refreshFrameworks() {
+function searchFrameworks() {
     var searchTerm = $("#search").val();
     if (searchTerm == null || searchTerm == "")
         searchTerm = "*";
-    var me = this;
-    me.loading = 0;
-    $("#sidebar").show().find("#loading").show().find("#status").text("Loading...");
+    hideAll();
     $("#frameworks").html("");
+    searchCompetencies = [];
     for (var i = 0; i < servers.length; i++) {
-        loading++;
-        EcFramework.search(servers[i], searchTerm, function (frameworks) {
-            for (var v = 0; v < frameworks.length; v++) {
-                var framework = frameworks[v];
-                if (framework.name === undefined || framework.name == null || framework.name == "")
-                    continue;
-                $("#frameworks").append("<p><a style='display:none'/><span/></p>").children().last().attr("id", framework.shortId()).click(click).children().first().text(framework.name).parent().children().last().text(framework.description);
-            }
-            loading--;
-            if (loading == 0) {
-                $("#sidebar").find("#loading").hide().find("#status").text("Please select a framework.");
-                $("#sidebar").find("a").show();
-            }
-        }, console.log, {
-            size: 5000
-        });
+        frameworkSearch(servers[i], searchTerm);
+        if (searchTerm != "*") {
+            frameworkSearchByCompetency(servers[i], searchTerm);
+        }
     }
+}
+
+function frameworkSearchByCompetency(server, searchTerm) {
+    loading++;
+    EcCompetency.search(server, searchTerm, function (competencies) {
+        var subSearch = "";
+        for (var v = 0; v < competencies.length; v++) {
+            searchCompetencies.push(competencies[v].shortId());
+            if (subSearch != "")
+                subSearch += " OR ";
+            subSearch += "competency:\"" + competencies[v].shortId() + "\"";
+        }
+        if (subSearch != "")
+            frameworkSearch(server, subSearch, searchTerm);
+        loading--;
+        if (loading == 0) {
+            if ($("#frameworks").html() == "")
+                $("#frameworks").html("<center>No frameworks found.</center>");
+            showAll();
+        }
+    }, console.log, {
+        size: 5000
+    });
+}
+
+function frameworkSearch(server, searchTerm, subsearchTerm) {
+    loading++;
+    EcFramework.search(server, searchTerm, function (frameworks) {
+        for (var v = 0; v < frameworks.length; v++) {
+            var framework = frameworks[v];
+            if (framework.name === undefined || framework.name == null || framework.name == "")
+                continue;
+            if ($("[id='" + framework.shortId() + "']").length == 0) {
+                var p = $("#frameworks").append("<p><a/><span/></p>").children().last();
+                p.attr("id", framework.shortId());
+                p.attr("subsearch", subsearchTerm);
+                p.click(click);
+                var title = p.children().first();
+                title.text(framework.name);
+                if (subsearchTerm != null)
+                    p.prepend("<span style='float:right'>*Matches inside. <span>");
+                var desc = p.children().last();
+                desc.text(framework.description);
+            }
+        }
+        loading--;
+        if (loading == 0) {
+            if ($("#frameworks").html() == "")
+                $("#frameworks").html("<center>No frameworks found.</center>");
+            showAll();
+        }
+    }, console.log, {
+        size: 5000
+    });
 }
 
 function select() {
@@ -86,33 +94,33 @@ function select() {
 }
 
 function click(evt) {
-    hideAll();
+    var subsearchTerm = $(evt.target).attr("subsearch");
+    if (subsearchTerm == null)
+        subsearchTerm = $(evt.target).parent().attr("subsearch");
     frameworkId = $(evt.target).attr("id");
     if (frameworkId == null)
         frameworkId = $(evt.target).parent().attr("id");
     repo = null;
-    $("#sidebar").hide(
-        {
-            complete: function(){
-                $("#mainbar").show({
-                    complete: function(){}
-                });
+    $("#mainbar").find("#loading").show();
+    $("#tree").hide();
+    $("#sidebar").hide({
+        complete: function () {
+            $("#mainbar").show({
+                complete: function () {}
+            });
         }
     });
     for (var i = 0; i < servers.length; i++)
         if (frameworkId.startsWith(servers[i])) {
-            repo = new EcRepository();
-            repo.selectedServer = servers[i];
+            repo = servers[i];
         }
     if (repo == null) {
-        repo = new EcRepository();
-        repo.selectedServer = servers[0];
+        repo = servers[0];
     }
-    refreshFramework();
-
+    refreshFramework(subsearchTerm);
 }
 
-function refreshFramework() {
+function refreshFramework(subsearch) {
     var me = this;
     $("#tree").html("");
     me.fetches = 0;
@@ -125,13 +133,24 @@ function refreshFramework() {
         if (queryParams.link == "true")
             $("#frameworkLink").attr("href", framework.shortId()).show();
         repo.precache(framework.competency.concat(framework.relation), function (success) {
-            if (framework.competency.length == 0)
+            if (framework.competency.length == 0) {
+                if ($("#tree").html() == "")
+                    $("#tree").html("<br><br><center><h3>This framework is empty.</h3></center>");
                 showAll();
-            else
+            } else {
+                me.fetches += framework.competency.length;
                 for (var i = 0; i < framework.competency.length; i++) {
-                    me.fetches++;
                     EcCompetency.get(framework.competency[i], function (competency) {
                         me.fetches--;
+                        if (subsearch != null)
+                            if (!EcArray.has(searchCompetencies, competency.shortId())) {
+                                if (me.fetches == 0) {
+                                    if ($("#tree").html() == "")
+                                        $("#tree").html("<br><br><center><h3>This framework is empty.</h3></center>");
+                                    showAll();
+                                }
+                                return;
+                            }
                         var treeNode = $("#tree").append("<li class = 'competency'><ul></ul></li>").children().last();
                         treeNode.attr("id", competency.shortId());
                         if (competency.description != null && competency.description != "NULL" && competency.description != competency.name)
@@ -168,6 +187,8 @@ function refreshFramework() {
                                                             }
                                                         }
                                                         if (me.fetches == 0) {
+                                                            if ($("#tree").html() == "")
+                                                                $("#tree").html("<br><br><center><h3>This framework is empty.</h3></center>");
                                                             showAll();
                                                         }
                                                     }, console.log);
@@ -176,29 +197,50 @@ function refreshFramework() {
                                         }
                                     }, console.log);
                                 }
-                            } else
+                            } else {
+                                if ($("#tree").html() == "")
+                                    $("#tree").html("<br><br><center><h3>This framework is empty.</h3></center>");
                                 showAll();
+                            }
+
                         }
                     }, console.log);
                 }
+            }
         });
     }, console.log);
 }
 
 
 function showAll() {
-    $("#mainbar").find("#loading").hide();
-    $("#tree").show();
+    $("#mainbar").find("#loading").hide({
+        complete: function () {
+            $("#tree").show({});
+        }
+    });
+    $("#sidebar").find("#loading").hide({
+        complete: function () {
+            $("#frameworks").show({});
+        }
+    });
 }
 
 function hideAll() {
-    $("#mainbar").find("#loading").show();
-    $("#tree").hide();
+    $("#tree").hide({
+        complete: function () {
+            $("#sidebar").find("#loading").show({});
+        }
+    });
+    $("#frameworks").hide({
+        complete: function () {
+            $("#mainbar").find("#loading").show({});
+        }
+    });
 }
 
 $("#search").keyup(function (event) {
     if (event.keyCode == '13') {
-        refreshFrameworks();
+        searchFrameworks();
     }
     return false;
 });
@@ -234,4 +276,5 @@ function importParentStyles() {
     document.getElementsByTagName("head")[0].appendChild(style);
 }
 
-refreshFrameworks();
+$("#sidebar").show({});
+searchFrameworks();
