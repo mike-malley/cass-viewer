@@ -72,6 +72,8 @@ function frameworkSearch(server, searchTerm, subsearchTerm) {
                     p.prepend("<span style='float:right'>*Matches inside. <span>");
                 var desc = p.children().last();
                 desc.text(framework.description);
+                if (searchTerm != "*" && subsearchTerm == null)
+                    p.mark(searchTerm);
             }
         }
         loading--;
@@ -165,6 +167,8 @@ function refreshFramework(subsearch) {
                                 console.log(evt);
                                 $(evt.target).parent().find("input").prop("checked", evt.target.checked);
                             });
+                        if (subsearch != null)
+                            treeNode.mark(subsearch);
                         if (me.fetches == 0) {
                             if (framework.relation != undefined && framework.relation.length > 0) {
                                 for (var i = 0; i < framework.relation.length; i++) {
