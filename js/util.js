@@ -6,7 +6,9 @@
  http://www.apache.org/licenses/LICENSE-2.0
 
  Unless required by applicable law or agreed to in writing, software distributed under the License is distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the License for the specific language governing permissions and limitations under the License.
-*/queryParams = function () {
+*/
+
+queryParams = function () {
     if (window.document.location.search == null)
         return {};
     var hashSplit = (window.document.location.search.split("?"));
@@ -40,15 +42,15 @@ function importParentStyles() {
             var cssRules = parentStyleSheets[i].cssRules;
             for (var j = 0, countJ = cssRules.length; j < countJ; ++j)
                 cssString += cssRules[j].cssText;
-        } else
-            cssString += parentStyleSheets[i].cssText; // IE8 and earlier
+        } //else
+        //cssString += parentStyleSheets[i].cssText; // IE8 and earlier
     }
     var style = document.createElement("style");
     style.type = "text/css";
     try {
         style.innerHTML = cssString;
     } catch (ex) {
-        style.styleSheet.cssText = cssString; // IE8 and earlier
+        //style.styleSheet.cssText = cssString; // IE8 and earlier
     }
     document.getElementsByTagName("head")[0].appendChild(style);
 }

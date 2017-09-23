@@ -1,7 +1,7 @@
 <!DOCTYPE html PUBLIC "-//W3C//DTD HTML 4.01//EN"
    "http://www.w3.org/TR/html4/strict.dtd">
 
-<html lang="en">
+<html id="cassControl" lang="en">
 
 <head>
     <meta charset="utf-8">
@@ -42,8 +42,8 @@
         <div id="header">
             <div>
                 <button id="selectButton" style="float:right;visibility:hidden;" onclick='select();'>&gt;</button>
-                <button style="float:left;" onclick='$("#mainbar").hide({complete: function(){$("#sidebar").show({complete: function(){}});}});'>&lt;</button>
-                <span id="title">Framework Viewer</span> <a id="frameworkLink" style="display:none;" target='_blank'>🔗</a>
+                <button style="float:left;" onclick='$("#mainbar").hide({complete: function(){$("#sidebar").show({complete: function(){}});}});'>&lt;</button><a id="frameworkLink" style="float:right;display:none;" target='_blank'>🔗</a>
+                <span id="title">Framework Viewer</span>
             </div>
         </div>
         <div id="main">
