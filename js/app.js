@@ -107,8 +107,14 @@ function select() {
     var ary = [];
     $("input:checked").parent().each(function (f) {
         ary.push($(this).attr("id"));
-    })
-    parent.postMessage(ary, queryParams.origin);
+        var rId = $(this).attr("relationId");
+        if (rId != null && rId !== undefined && rId != "")
+            ary.push(rId);
+    });
+    parent.postMessage({
+        message: "selected",
+        selected: ary
+    }, queryParams.origin);
 }
 
 function click(evt) {
@@ -185,9 +191,7 @@ function refreshCompetency(me, framework, i, subsearch) {
         treeNode.attr("id", competency.shortId());
         if (competency.description != null && competency.description != "NULL" && competency.description != competency.name)
             treeNode.prepend("<small/>").children().first().text(competency.getDescription());
-        treeNode.prepend("<span/>").children().first().text(competency.getName()).click(function (evt) {
-            $(evt.target).parent().children("ul").slideToggle();
-        });
+        treeNode.prepend("<span/>").children().first().text(competency.getName());
         if (queryParams.link == "true")
             treeNode.prepend(" <a style='float:right;' target='_blank'>🔗</a>").children().first().attr("href", competency.shortId());
         if (queryParams.select != null)
@@ -205,7 +209,15 @@ function refreshCompetency(me, framework, i, subsearch) {
                         me.fetches--;
                         if (relation.source !== undefined) {
                             if (relation.relationType == "narrows") {
-                                $(".competency[id=\"" + relation.target + "\"]").children().last().append($(".competency[id=\"" + relation.source + "\"]"));
+                                $(".competency[id=\"" + relation.target + "\"]").children().last().append($(".competency[id=\"" + relation.source + "\"]").attr("relationId", relation.shortId()));
+                                if (!$(".competency[id=\"" + relation.target + "\"]").hasClass("expandable"))
+                                    $(".competency[id=\"" + relation.target + "\"]").addClass("expandable").prepend("<span/>").children().first().text("🔽 ").click(function (evt) {
+                                        $(evt.target).parent().children("ul").slideToggle();
+                                        if ($(this).text() == "🔽 ")
+                                            $(this).text("▶️ ");
+                                        else
+                                            $(this).text("🔽 ");
+                                    });
                             }
                             if (me.fetches == 0) {
                                 me.fetches += framework.relation.length;

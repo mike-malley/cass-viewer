@@ -27,7 +27,7 @@
             //check the origin, to make sure it comes from a trusted source.
             if (false && event.origin !== window.location.origin)
                 return;
-            alert("I got " + event.data.length + " selected items from the iframe");
+            alert("I got " + event.data.selected.length + " selected items from the iframe");
         }
         document.getElementsByTagName("iframe")[0].setAttribute("src", "index.html?server=http://sandbox.cassproject.org&select=Add&origin=" + window.location.origin);
 
