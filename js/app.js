@@ -219,6 +219,7 @@ function refreshCompetency(me, framework, i, subsearch) {
                         me.fetches--;
                         if (relation.source !== undefined) {
                             if (relation.relationType == "narrows") {
+                                if (relation.source == relation.target) return;
                                 $(".competency[id=\"" + relation.target + "\"]").children().last().append($(".competency[id=\"" + relation.source + "\"]").attr("relationId", relation.shortId()));
                                 if (!$(".competency[id=\"" + relation.target + "\"]").hasClass("expandable"))
                                     $(".competency[id=\"" + relation.target + "\"]").addClass("expandable").prepend("<span/>").children().first().html("<i class='fa fa-minus-square' aria-hidden='true'></i> ").click(function (evt) {
@@ -240,6 +241,7 @@ function refreshCompetency(me, framework, i, subsearch) {
                                         me.fetches--;
                                         if (relation.source !== undefined) {
                                             if (relation.relationType == "requires") {
+                                                if (relation.source == relation.target) return;
                                                 if ($(".competency[id=\"" + relation.target + "\"]").prevAll(".competency[id=\"" + relation.source + "\"]").length > 0)
                                                     $(".competency[id=\"" + relation.target + "\"]").insertBefore($(".competency[id=\"" + relation.source + "\"]"));
                                             }
