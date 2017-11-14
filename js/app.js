@@ -219,20 +219,21 @@ function refreshCompetency(me, framework, i, subsearch) {
                         me.fetches--;
                         if (relation.source !== undefined) {
                             if (relation.relationType == "narrows") {
-                                if (relation.source == relation.target) return;
-                                $(".competency[id=\"" + relation.target + "\"]").children().last().append($(".competency[id=\"" + relation.source + "\"]").attr("relationId", relation.shortId()));
-                                if (!$(".competency[id=\"" + relation.target + "\"]").hasClass("expandable"))
-                                    $(".competency[id=\"" + relation.target + "\"]").addClass("expandable").prepend("<span/>").children().first().html("<i class='fa fa-minus-square' aria-hidden='true'></i> ").click(function (evt) {
-                                        $(this).parent().children("ul").slideToggle();
+                                if (relation.source != relation.target) {
+                                    $(".competency[id=\"" + relation.target + "\"]").children().last().append($(".competency[id=\"" + relation.source + "\"]").attr("relationId", relation.shortId()));
+                                    if (!$(".competency[id=\"" + relation.target + "\"]").hasClass("expandable"))
+                                        $(".competency[id=\"" + relation.target + "\"]").addClass("expandable").prepend("<span/>").children().first().html("<i class='fa fa-minus-square' aria-hidden='true'></i> ").click(function (evt) {
+                                            $(this).parent().children("ul").slideToggle();
 
-                                        if ($(this).hasClass('collapsed')) {
-                                            $(this).removeClass('collapsed');
-                                            $(this).html('<i class="fa fa-minus-square" aria-hidden="true"></i> ');
-                                        } else {
-                                            $(this).addClass('collapsed');
-                                            $(this).html('<i class="fa fa-plus-square" aria-hidden="true"></i> ');
-                                        }
-                                    });
+                                            if ($(this).hasClass('collapsed')) {
+                                                $(this).removeClass('collapsed');
+                                                $(this).html('<i class="fa fa-minus-square" aria-hidden="true"></i> ');
+                                            } else {
+                                                $(this).addClass('collapsed');
+                                                $(this).html('<i class="fa fa-plus-square" aria-hidden="true"></i> ');
+                                            }
+                                        });
+                                }
                             }
                             if (me.fetches == 0) {
                                 me.fetches += framework.relation.length;
@@ -241,9 +242,10 @@ function refreshCompetency(me, framework, i, subsearch) {
                                         me.fetches--;
                                         if (relation.source !== undefined) {
                                             if (relation.relationType == "requires") {
-                                                if (relation.source == relation.target) return;
-                                                if ($(".competency[id=\"" + relation.target + "\"]").prevAll(".competency[id=\"" + relation.source + "\"]").length > 0)
-                                                    $(".competency[id=\"" + relation.target + "\"]").insertBefore($(".competency[id=\"" + relation.source + "\"]"));
+                                                if (relation.source != relation.target) {
+                                                    if ($(".competency[id=\"" + relation.target + "\"]").prevAll(".competency[id=\"" + relation.source + "\"]").length > 0)
+                                                        $(".competency[id=\"" + relation.target + "\"]").insertBefore($(".competency[id=\"" + relation.source + "\"]"));
+                                                }
                                             }
                                         }
                                         if (me.fetches == 0) {
