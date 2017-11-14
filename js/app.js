@@ -279,6 +279,16 @@ function refreshFramework(subsearch) {
     }, console.log);
 }
 
+fetchFailure = function (failure) {
+    this.fetches--;
+    error(failure);
+    if (this.fetches == 0) {
+        if ($("#tree").html() == "")
+            $("#tree").html("<br><br><center><h3>This framework is empty.</h3></center>");
+        showAll();
+    }
+};
+
 function refreshCompetency(me, framework, i, subsearch) {
     EcCompetency.get(framework.competency[i], function (competency) {
         me.fetches--;
@@ -297,7 +307,7 @@ function refreshCompetency(me, framework, i, subsearch) {
             treeNode.prepend("<small/>").children().first().text(competency.getDescription());
         treeNode.prepend("<span/>").children().first().text(competency.getName());
         if (queryParams.link == "true")
-            treeNode.prepend(" <a style='float:right;' target='_blank'>🔗</a>").children().first().attr("href", competency.shortId());
+            treeNode.prepend(" <a style='float:right;' target='_blank'><i class='fa fa-link' aria-hidden='true'></i></a>").children().first().attr("href", competency.shortId());
         if (queryParams.select != null)
             treeNode.prepend("<input type='checkbox'>").children().first().click(function (evt) {
                 console.log(evt);
@@ -313,15 +323,21 @@ function refreshCompetency(me, framework, i, subsearch) {
                         me.fetches--;
                         if (relation.source !== undefined) {
                             if (relation.relationType == "narrows") {
-                                $(".competency[id=\"" + relation.target + "\"]").children().last().append($(".competency[id=\"" + relation.source + "\"]").attr("relationId", relation.shortId()));
-                                if (!$(".competency[id=\"" + relation.target + "\"]").hasClass("expandable"))
-                                    $(".competency[id=\"" + relation.target + "\"]").addClass("expandable").prepend("<span/>").children().first().text("🔽 ").click(function (evt) {
-                                        $(evt.target).parent().children("ul").slideToggle();
-                                        if ($(this).text() == "🔽 ")
-                                            $(this).text("▶️ ");
-                                        else
-                                            $(this).text("🔽 ");
-                                    });
+                                if (relation.source != relation.target) {
+                                    $(".competency[id=\"" + relation.target + "\"]").children().last().append($(".competency[id=\"" + relation.source + "\"]").attr("relationId", relation.shortId()));
+                                    if (!$(".competency[id=\"" + relation.target + "\"]").hasClass("expandable"))
+                                        $(".competency[id=\"" + relation.target + "\"]").addClass("expandable").prepend("<span/>").children().first().html("<i class='fa fa-minus-square' aria-hidden='true'></i> ").click(function (evt) {
+                                            $(this).parent().children("ul").slideToggle();
+
+                                            if ($(this).hasClass('collapsed')) {
+                                                $(this).removeClass('collapsed');
+                                                $(this).html('<i class="fa fa-minus-square" aria-hidden="true"></i> ');
+                                            } else {
+                                                $(this).addClass('collapsed');
+                                                $(this).html('<i class="fa fa-plus-square" aria-hidden="true"></i> ');
+                                            }
+                                        });
+                                }
                             }
                             if (me.fetches == 0) {
                                 me.fetches += framework.relation.length;
@@ -330,8 +346,10 @@ function refreshCompetency(me, framework, i, subsearch) {
                                         me.fetches--;
                                         if (relation.source !== undefined) {
                                             if (relation.relationType == "requires") {
-                                                if ($(".competency[id=\"" + relation.target + "\"]").prevAll(".competency[id=\"" + relation.source + "\"]").length > 0)
-                                                    $(".competency[id=\"" + relation.target + "\"]").insertBefore($(".competency[id=\"" + relation.source + "\"]"));
+                                                if (relation.source != relation.target) {
+                                                    if ($(".competency[id=\"" + relation.target + "\"]").prevAll(".competency[id=\"" + relation.source + "\"]").length > 0)
+                                                        $(".competency[id=\"" + relation.target + "\"]").insertBefore($(".competency[id=\"" + relation.source + "\"]"));
+                                                }
                                             }
                                         }
                                         if (me.fetches == 0) {
@@ -339,11 +357,11 @@ function refreshCompetency(me, framework, i, subsearch) {
                                                 $("#tree").html("<br><br><center><h3>This framework is empty.</h3></center>");
                                             showAll();
                                         }
-                                    }, console.log);
+                                    }, fetchFailure);
                                 }
                             }
                         }
-                    }, console.log);
+                    }, fetchFailure);
                 }
             } else {
                 if ($("#tree").html() == "")
@@ -351,7 +369,7 @@ function refreshCompetency(me, framework, i, subsearch) {
                 showAll();
             }
         }
-    }, console.log);
+    }, fetchFailure);
 }
 
 function showAll() {

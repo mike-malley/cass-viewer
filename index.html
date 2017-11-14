@@ -9,6 +9,7 @@
     <title>CASS Viewer</title>
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
     <link rel="stylesheet" href="css/dashboard.css">
+    <link rel="stylesheet" href="css/font-awesome.min.css">
 </head>
 
 <body>
@@ -42,7 +43,7 @@
         <div id="header">
             <div>
                 <button id="selectButton" style="float:right;visibility:hidden;" onclick='select();'>&gt;</button>
-                <button id="backButton" style="float:left;" onclick='$("#mainbar").hide({complete: function(){$("#sidebar").show({complete: function(){}});}});'>&lt;</button><a id="frameworkLink" style="float:right;display:none;" target='_blank'>🔗</a>
+                <button id="backButton" style="float:left;" onclick='$("#mainbar").hide({complete: function(){$("#sidebar").show({complete: function(){}});}});'>&lt;</button><a id="frameworkLink" class='fa fa-link' style="float:right;display:none;" target='_blank'></a>
                 <span id="title">Framework Viewer</span>
             </div>
         </div>

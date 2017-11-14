@@ -8,6 +8,8 @@
  Unless required by applicable law or agreed to in writing, software distributed under the License is distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the License for the specific language governing permissions and limitations under the License.
 */
 
+var error = console.error;
+
 queryParams = function () {
     if (window.document.location.search == null)
         return {};
@@ -24,15 +26,20 @@ queryParams = function () {
 };
 queryParams = queryParams();
 
-window.onload = function () {
+$(document).ready(function () {
     if (parent != window) {
-        importParentStyles();
         var oHead = document.getElementsByTagName("head")[0];
         var arrStyleSheets = parent.document.getElementsByTagName("style");
         for (var i = 0; i < arrStyleSheets.length; i++)
             oHead.appendChild(arrStyleSheets[i].cloneNode(true));
+        arrStyleSheets = parent.document.getElementsByTagName("link");
+        for (var i = 0; i < arrStyleSheets.length; i++)
+            oHead.appendChild(arrStyleSheets[i].cloneNode(true));
+        try {
+            importParentStyles();
+        } catch (e) {}
     }
-}
+});
 
 function importParentStyles() {
     var parentStyleSheets = parent.document.styleSheets;
