@@ -16,6 +16,110 @@ if (queryParams.select != null)
 var loading = 0;
 var searchCompetencies = [];
 
+var frameworkSelectionIndex = null;
+var competencySelectionIndex = null;
+var clickHasFired = false;
+
+$('body').on('click', '.competency', function(evt) {
+    if (!clickHasFired) {
+        $(this).children('input').click();
+        clickHasFired = true;
+    }
+});
+
+$('body').keydown(function(evt) {
+    if (!$('input').is(':focus') && !$('select').is(':focus') && !$('textarea').is(':focus')) {
+        //If we're on the framework selection screen
+        if ($('#sidebar').css('display') === 'block') {
+            var frameworkElementArray = document.getElementById('frameworks').children;
+            if (frameworkSelectionIndex === null) {
+                frameworkSelectionIndex = 0;
+                $('#frameworks').find('p.selected').each(function() {
+                    $(this).removeClass('selected');
+                });
+                frameworkElementArray[frameworkSelectionIndex].classList.add('selected');
+                return;
+            }
+            //On Down arrow
+            if (evt.which === 40) {
+                if (frameworkSelectionIndex < frameworkElementArray.length)
+                    frameworkSelectionIndex++;
+                //clear any existing selected
+                $('#frameworks').find('p.selected').each(function() {
+                    $(this).removeClass('selected');
+                });
+                frameworkElementArray[frameworkSelectionIndex].classList.add('selected');
+            }
+            //On Up arrow
+            else if (evt.which === 38) {
+                if (frameworkSelectionIndex > 0)
+                    frameworkSelectionIndex--;
+                $('#frameworks').find('p.selected').each(function() {
+                    $(this).removeClass('selected');
+                });
+                frameworkElementArray[frameworkSelectionIndex].classList.add('selected');
+            }
+            //On enter
+            else if (evt.which === 13) {
+                $(frameworkElementArray[frameworkSelectionIndex]).click();
+                frameworkSelectionIndex = null;
+            }
+        }
+        //If we're on the competency section
+        else if ($('#mainbar').css('display') === 'block') {
+            var competencyElementArray = $('#tree').find('.competency:visible');
+            if (competencySelectionIndex === null) {
+                competencySelectionIndex = 0;
+                return;
+            }
+            //On down arrow
+            if (evt.which === 40) {
+                if (competencySelectionIndex < competencyElementArray.length)
+                    competencySelectionIndex++;
+                $('#tree').find('.selected').each(function() {
+                    $(this).removeClass('selected');
+                });
+                $(competencyElementArray[competencySelectionIndex]).addClass('selected');
+            }
+            //On up arrow
+            else if (evt.which === 38) {
+                if (competencySelectionIndex > 0)
+                    competencySelectionIndex--;
+                $('#tree').find('.selected').each(function() {
+                    $(this).removeClass('selected');
+                });
+                $(competencyElementArray[competencySelectionIndex]).addClass('selected');
+            }
+            //On left and right arrows
+            else if (evt.which === 39) {
+                $(competencyElementArray[competencySelectionIndex]).find('.collapse').click();
+            }
+            else if (evt.which === 37) {
+                $(competencyElementArray[competencySelectionIndex]).find('.collapse').click();
+            }
+            //On Backspace
+            else if (evt.which === 8) {
+                $('#backButton').click();
+            }
+            //On enter
+            else if (evt.which === 13) {
+                clickHasFired = false;
+                //If shift is also held
+                if (evt.shiftKey)
+                    $('#selectButton').click();
+                else
+                    $(competencyElementArray[competencySelectionIndex]).click();
+            }
+        }
+    } else {
+        //On escape
+        if (evt.which === 27) {
+            $('input').blur();
+            $('select').blur();
+        }
+    }
+});
+
 function searchFrameworks() {
     var searchTerm = $("#search").val();
     if (searchTerm == null || searchTerm == "")
