@@ -1,4 +1,5 @@
 [![Build Status](https://travis-ci.org/cassproject/cass-viewer.svg?branch=master)](https://travis-ci.org/cassproject/cass-viewer)
+
 Deprecated for view mode in CASS Editor. All links now refer to cass-editor and this document has been updated to reflect this.
 
 # CASS
