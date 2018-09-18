@@ -8,6 +8,7 @@
 
 function performInitIdentityAction(data) {
     setupIdentity(data.serverParm,data.nameParm,data.pemParm);
+    loadPageContents();
 }
 
 //**************************************************************************************************
@@ -58,14 +59,13 @@ else {
 // Initial Page Load
 //**************************************************************************************************
 $(document).ready(function () {
-    debugMessage("WUTWUT");
     if (queryParams.user == "wait") {
         debugMessage("Recieved user='wait' parameter...");
-        showPageAsBusy("Initializing...");
+        showPageAsBusy("Initializing Framework Explorer...");
         var message = {
             message: "waiting"
         };
-        debugMessage("Responding with :" + message);
+        debugMessage("Responding with :" + JSON.stringify(message));
         parent.postMessage(message, queryParams.origin);
     }
     else {

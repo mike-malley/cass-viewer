@@ -8,9 +8,9 @@
 var repo;
 var selectedServer;
 var loggedInIdentityName;
+var loggedInPk;
 var loggedInPkPem;
 var loggedInPpkPem;
-
 
 //**************************************************************************************************
 // Repository Intialization
@@ -33,7 +33,8 @@ function initSessionIdentity() {
     var eciPpk = EcPpk.fromPem(loggedInPpkPem);
     eci.ppk = eciPpk;
     EcIdentityManager.ids.push(eci);
-    loggedInPkPem = EcIdentityManager.ids[0].ppk.toPk().toPem();
+    loggedInPk = EcIdentityManager.ids[0].ppk.toPk();
+    loggedInPkPem = loggedInPk.toPem();
     debugMessage("Identity intialized:");
     debugMessage("Display Name: " + EcIdentityManager.ids[0].displayName);
     debugMessage("Public Key: " + loggedInPkPem);
