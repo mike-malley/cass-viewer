@@ -58,6 +58,7 @@ else {
 // Initial Page Load
 //**************************************************************************************************
 $(document).ready(function () {
+    debugMessage("WUTWUT");
     if (queryParams.user == "wait") {
         debugMessage("Recieved user='wait' parameter...");
         showPageAsBusy("Initializing...");
