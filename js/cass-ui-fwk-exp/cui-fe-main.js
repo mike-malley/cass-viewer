@@ -2,6 +2,8 @@
 // CASS UI Framework Explorer Main Functions
 //**************************************************************************************************
 
+//TODO buildFrameworkDisplays implement this setUpFrameworkMainMenuTools
+
 //**************************************************************************************************
 // Constants
 
@@ -20,6 +22,11 @@ var currentFrameworkFull;
 var currentFrameworkRelatedFrameworks;
 
 var userOwnsCurrentFramework;
+
+var currentFrameworkCompetencyData;
+
+var currentD3FrameworkNode;
+var currentD3FrameworkNodeString;
 
 //**************************************************************************************************
 // Utility Functions
@@ -45,6 +52,48 @@ function getFrameworkDescription(frameworkId) {
     var fw = frameworkdIdFrameworkMap[frameworkId];
     if (fw) return fw.description;
     else return "";
+}
+
+//yes...this first if is weird...but it is an easy solution to a problem
+// specifically if trying to get the competency name for a D3 circle ID and that D3 circle is the
+// outer framework circle...
+function getCompetencyName(compId) {
+    if (compId == currentFrameworkName) return currentFrameworkName;
+    if (currentFrameworkCompetencyData.competencyPacketDataMap[compId]) {
+        return currentFrameworkCompetencyData.competencyPacketDataMap[compId].name;
+    }
+    else return "";
+}
+
+function getCassNodePacket(packetId) {
+    if (currentFrameworkCompetencyData && currentFrameworkCompetencyData.competencyPacketDataMap &&
+        currentFrameworkCompetencyData.competencyPacketDataMap[packetId]) {
+        return currentFrameworkCompetencyData.competencyPacketDataMap[packetId].cassNodePacket;
+    }
+    else return null;
+}
+
+function getCompetencyD3NodeTracker(trackerId) {
+    if (currentFrameworkCompetencyData && currentFrameworkCompetencyData.competencyD3NodeTrackerMap &&
+        currentFrameworkCompetencyData.competencyD3NodeTrackerMap[trackerId]) {
+        return currentFrameworkCompetencyData.competencyD3NodeTrackerMap[trackerId];
+    }
+    else return null;
+}
+
+//**************************************************************************************************
+// Explorer Circle Graph Supporting Functions
+//**************************************************************************************************
+
+//d.data.name should be the competency ID or the framework name if the circle is the outer circle....
+function getExplorerCgCircleText(d) {
+    if (!d || !d.data || !d.data.name) return "UNDEFINED 'D'";
+    else if (currentFrameworkCompetencyData.competencyD3NodeTrackerMap[d.data.name]) {
+        var text = getCompetencyName(d.data.name);
+        if (text == "") text = "UNDEFINED NODE PACKET";
+        return text;
+    }
+    return "UNDEFINED NAME";
 }
 
 //**************************************************************************************************
@@ -99,15 +148,66 @@ function checkForOpenFrameworkSearchbarEnter(event) {
 }
 
 //**************************************************************************************************
+// Build Framework Display
+//**************************************************************************************************
+
+function setUpFrameworkMainMenuTools() {
+    if (currentFrameworkFull.hasOwner(loggedInPk)) {
+        $(FRAMEWORK_EXP_MM_TOOLS).show();
+    }
+    else {
+        $(FRAMEWORK_EXP_MM_TOOLS).hide();
+    }
+}
+
+function checkForPostDisplayZoom() {
+    if (zoomToCompetencyOnOpen) {
+        zoomToCompetencyOnOpen = false;
+        if (screenToZoomOnOpen && screenToZoomOnOpen == "list-screen") currentScreen = "list-screen";
+        $('.screen:visible').fadeOut('fast', function () {
+            $("#" + currentScreen).fadeIn('fast',function () {
+                findItemByFrameworkContentsSearchBar(compNameToZoom);
+            });
+        });
+    }
+}
+
+function buildFrameworkDisplays() {
+    showPageAsBusy("Building framework display...");
+    //TODO buildFrameworkDisplays implement this setUpFrameworkMainMenuTools
+    // setUpFrameworkMainMenuTools();
+    clearFrameworkExpCircleSvg();
+    buildExpGraphCircles(null, JSON.parse(currentD3FrameworkNodeString));
+    // buildGraphProfileSummary();
+    // buildListView();
+    // hideCirlceSidebarDetails();
+    // //showGraphViewMainContentsScreen();
+    showPageMainContentsContainer();
+    // fillInFrameworkContentsSearchAutoComplete();
+    // $(FWK_CONT_SRCH_INPT).val("");
+    // showFrameworkContentsSearchBar();
+    // hasFinishedLoading = true;
+    // enableViewToggleButtons();
+    // checkForPostDisplayZoom();
+}
+
+//**************************************************************************************************
 // Framework Display Preparation
 //**************************************************************************************************
 
 function prepForFrameworkDisplay(fnpg) {
-    //TODO left off here
-
-    // buildFrameworkCompetencyClusterNodeData(fnpg);
-    // buildCurrentD3FrameworkNode();
-    // buildFrameworkDisplays();
+    showPageAsBusy("Processing collapsed data...");
+    currentFrameworkCompetencyData = buildFrameworkCompetencyData(currentFrameworkId,currentFrameworkName,fnpg);
+    showPageAsBusy("Prepping framework display nodes...");
+    currentD3FrameworkNode = setUpD3FrameworkNodes(currentFrameworkName,currentFrameworkCompetencyData);
+    currentD3FrameworkNodeString = buildD3JsonString(currentD3FrameworkNode);
+    debugMessage("currentFrameworkCompetencyData");
+    debugMessage(currentFrameworkCompetencyData);
+    debugMessage("currentD3FrameworkNode:");
+    debugMessage(currentD3FrameworkNode);
+    debugMessage("currentD3FrameworkNode JSON String:");
+    debugMessage(currentD3FrameworkNodeString);
+    buildFrameworkDisplays();
 }
 
 //**************************************************************************************************
@@ -139,7 +239,6 @@ function handleCollapseFrameworkSuccess(frameworkId,fnpg) {
         showFrameworkHasCircularDependencyWarning();
     }
     else {
-        //frameworkNodePacketGraph = fnpg;
         prepForFrameworkDisplay(fnpg);
     }
 }
@@ -241,7 +340,6 @@ function buildFrameworkLists(arrayOfEcFrameworks) {
         showNoFrameworksAvailableWarning();
     }
     else {
-        showPageError("CONTINUE CODING");
         createSortedAvailableFrameworkList(ownedFrameworkList,unownedFrameworkList);
         loadAndOpenFramework(availableFrameworkList[0].shortId());
     }

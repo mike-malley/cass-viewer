@@ -1,8 +1,9 @@
 //**************************************************************************************************
-// CASS UI Framework Explorer Utility Functions
+// CASS UI Framework Explorer UI Utility Functions
 //**************************************************************************************************
 
 //TODO implement goToDisplayRoot
+//TODO clearOpenFrameworkSearchBar verify this
 
 //**************************************************************************************************
 // Constants
@@ -10,7 +11,9 @@
 const DEBUG_CONSOLE = true;
 const DEBUG_ALERT = false;
 
+// Color Themes
 const FRAMEWORK_EXP_THEME_CLASS = "theme-burgendy";
+const EXP_CIR_COLOR_RANGE = "burgendy";
 
 // Page Element IDs
 const CASSUI_MAIN_BUSY_CTR = "#cassUiMainBusyContainer";
@@ -34,7 +37,6 @@ const OPEN_FWK_MODAL = "#modal-open-framework";
 
 //**************************************************************************************************
 // Variables
-
 var currentScreen;
 
 //**************************************************************************************************
@@ -137,6 +139,16 @@ function clearFrameworkContentsSearchBar() {
     $(FWK_CONT_SRCH_INPT).val("");
 }
 
+function clearOpenFrameworkSearchBar() {
+    //TODO clearOpenFrameworkSearchBar verify this
+    $(OPEN_FWK_SRCH_INPT).val("");
+}
+
+function clearAllSearchBars() {
+    clearOpenFrameworkSearchBar();
+    clearFrameworkContentsSearchBar();
+}
+
 function setPageColorTheme() {
     $('body').addClass(FRAMEWORK_EXP_THEME_CLASS);
 }
@@ -160,10 +172,6 @@ function showFrameworkHasCircularDependencyWarning() {
     $(CIRC_DEPEND_WARNING_CTR).show();
 }
 
-function clearOpenFrameworkSearchBar() {
-    $(OPEN_FWK_SRCH_INPT).val("");
-}
-
 function goToDisplayRoot() {
     //TODO implement goToDisplayRoot
     alert("IMPLEMENT goToDisplayRoot");
@@ -171,6 +179,10 @@ function goToDisplayRoot() {
     //     //Node ID for a framework is its name..since that is the only node with a name ID, it should be fine...
     //     zoomExpCgByD3NodeId(currentFrameworkName, true);
     // }
+}
+
+function generateAnchorLink(href, text, target) {
+    return "<a href=\"" + href + "\" target=\"" + target + "\">" + escapeSingleQuote(text) + "</a>";
 }
 
 //**************************************************************************************************
