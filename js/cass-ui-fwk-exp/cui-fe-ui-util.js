@@ -11,29 +11,91 @@
 const DEBUG_CONSOLE = true;
 const DEBUG_ALERT = false;
 
+const DEFAULT_FRAMEWORK_DESCRIPTION = "The following related elements were found for this competency: ";
+
+const LIST_VIEW_SCROLL_ITEM_OFFSET = 220;
+
+const GRAPH_SCREEN = "#graph-screen";
+const LIST_SCREEN = "#list-screen";
+
 // Color Themes
 const FRAMEWORK_EXP_THEME_CLASS = "theme-burgendy";
 const EXP_CIR_COLOR_RANGE = "burgendy";
 
-// Page Element IDs
+// Various Page Element IDs
 const CASSUI_MAIN_BUSY_CTR = "#cassUiMainBusyContainer";
 const CASSUI_MAIN_BUSY_TXT = "#cassUiMainBusyText";
 const CASSUI_MAIN_ERR_CTR = "#cassUiMainErrorContainer";
 const CASSUI_MAIN_ERR_TXT = "#cassUiMainErrorText";
 const CASSUI_HIGH_LVL_WARNING = ".cassUiHighLevelWarning";
 const CASSUI_MAIN_CONTENTS_CTR = "#cassUiMainContentsContainer";
+
 const SHOW_GRAPH_VIEW_BTN = "#showGraphViewBtn";
 const SHOW_LIST_VIEW_BTN = "#showListViewBtn";
+
 const FRAMEWORK_EXP_MENU = "#frameworkExplorerMenu";
+const FRAMEWORK_EXP_NAME = "#frameworkExplorerName";
+
 const FWK_CONT_SRCH_CTR = "#frameworkContentsSearchContainer";
 const FWK_CONT_SRCH_INPT = "#frameworkContentsSearchInput";
-const FRAMEWORK_EXP_NAME = "#frameworkExplorerName";
+
+const FWK_CONTENTS_LIST = "#list-screen__root";
+
+const FWK_EXP_PAGE_TOOLS = "#page-tools";
+const FWK_EXP_SHARE_TOOL = "#fwkExpShareTool";
+const FWK_EXP_PUB_TOOL = "#fwkExpPublishTool";
+
+//Circle Focus Detail Summary (left-hand side)/ Sidebar (right-hand side)  Items
+const CIR_FCS_DTL_CTR = "#circleFocusDetailsSidebar";
+const CIR_FCS_DTL_REL_LIST = "#circleFocusDetailsRelList";
+const CIR_FCS_DTL_SING_NAME = "#circleFocusDetailsSingleName";
+const CIR_FCS_DTL_SING_DESC = "#circleFocusDetailsSingleDesc";
+const CIR_FCS_COMP_TOOLS = "#circleFocusCompTools";
+const CIR_FCS_DTL_COMP_DTL_LINK = "#circleFocusCompDetailsLink";
+const CIR_FCS_DTL_COMP_CONF = "#circleFocusCompConfIcon";
+const CIR_FCS_DTL_ASR_LIST_CTR = "#circleFocusDetailsAssertionListContainer";
+
+const CIR_FCS_SUM_DESC = "#circleFocusSummaryDesc";
+const CIR_FCS_SUM_LIST_CTR = "#circleFocusSummaryListContainer";
+
+const CIR_FCS_SUM_ITEM_CLASS_ID = "gpsi";
+
+const FWK_REL_FWK_LIST_CTR = "#circleFocusRelatedFwListContainer";
+const FWK_REL_FWK_LIST = "#circleFocusRelatedFwList";
+
+//Warning Containers
 const NO_FRAMEWORKS_AVAILABLE_CTR = "#noFrameworksAvailableWarningContainer";
 const CIRC_DEPEND_WARNING_CTR = "#circularDependencyWarningContainer";
+
+// Modals
+// Open Framework Modal
+const OPEN_FWK_MODAL = "#modal-open-framework";
 const OPEN_FWK_SRCH_INPT = "#openFrameworkSearchInput";
 
-// Modal IDs
-const OPEN_FWK_MODAL = "#modal-open-framework";
+
+// Framework Share Modal
+const FWK_SHARE_MODAL = "#modal-framework-share";
+const FWK_SHARE_FWK_NAME = "#fwkShareFwkName";
+const FWK_SHARE_SAVE_BTN = "#fwkShareSaveBtn";
+const FWK_SHARE_NO_CONT_CTR = "#fwkShareNoContactsContainer";
+const FWK_SHARE_CONT_LIST_HDR_CTR = "#fwkShareContactsListHdrContainer";
+const FWK_SHARE_CONT_LIST_CTR = "#fwkShareContactsListContainer";
+const FWK_SHARE_CONT_LIST = "#fwkShareContactsList";
+const FWK_SHARE_BUSY_CTR = "#fwkShareBusyCtr";
+const FWK_SHARE_BUSY_TXT = "#fwkShareBusyCtrText";
+const FWK_SHARE_ERROR_CTR = "#fwkShareErrorCtr";
+const FWK_SHARE_ERROR_TXT = "#fwkShareErrorText";
+const FWK_SHARE_CONT_VW_CB_ID_PREFIX = "fwk_share_cont_vw_";
+const FWK_SHARE_CONT_ED_CB_ID_PREFIX = "fwk_share_cont_ed_";
+
+// Framework Publish Modal
+const FWK_PUBLISH_MODAL = "#modal-framework-publish";
+const FWK_PUBLISH_FWK_NAME = "#fwkPublishFwkName";
+const FWK_PUBLISH_BUSY_CTR = "#fwkPublishBusyCtr";
+const FWK_PUBLISH_BUSY_TXT = "#fwkPublishBusyCtrText";
+const FWK_PUBLISH_ERROR_CTR = "#fwkPublishErrorCtr";
+const FWK_PUBLISH_ERROR_TXT = "#fwkPublishErrorText";
+const FWK_PUBLISH_DEST = "#fwkPublishDestination";
 
 //**************************************************************************************************
 // Variables
@@ -59,6 +121,22 @@ queryParams = function () {
 };
 
 queryParams = queryParams();
+
+function hideFrameworkExpTools() {
+    $(FWK_EXP_PAGE_TOOLS).hide();
+}
+
+function setUpAndShowFrameworkExpTools() {
+    if (currentFrameworkFull.hasOwner(loggedInPk)) {
+        $(FWK_EXP_SHARE_TOOL).show();
+        $(FWK_EXP_PUB_TOOL).show();
+    }
+    else {
+        $(FWK_EXP_SHARE_TOOL).hide();
+        $(FWK_EXP_PUB_TOOL).hide();
+    }
+    $(FWK_EXP_PAGE_TOOLS).show();
+}
 
 function debugMessage(msg) {
     if (DEBUG_CONSOLE) console.log(msg);
@@ -111,6 +189,14 @@ function showPageError(text) {
     $(CASSUI_MAIN_ERR_TXT).html(text);
     $(CASSUI_MAIN_ERR_CTR).show();
     disableViewToggleButtons();
+}
+
+function showCircleSidebarDetails() {
+    $(CIR_FCS_DTL_CTR).removeClass("hide");
+}
+
+function hideCirlceSidebarDetails() {
+    $(CIR_FCS_DTL_CTR).addClass("hide");
 }
 
 function showFrameworkExplorerMenu() {
@@ -173,16 +259,134 @@ function showFrameworkHasCircularDependencyWarning() {
 }
 
 function goToDisplayRoot() {
-    //TODO implement goToDisplayRoot
-    alert("IMPLEMENT goToDisplayRoot");
-    // if (hasFinishedLoading) {
-    //     //Node ID for a framework is its name..since that is the only node with a name ID, it should be fine...
-    //     zoomExpCgByD3NodeId(currentFrameworkName, true);
-    // }
+    if (hasFinishedLoading) {
+        //Node ID for a framework is its name..since that is the only node with a name ID, it should be fine...
+        zoomExpCgByD3NodeId(currentFrameworkName, true);
+    }
 }
 
 function generateAnchorLink(href, text, target) {
     return "<a href=\"" + href + "\" target=\"" + target + "\">" + escapeSingleQuote(text) + "</a>";
+}
+
+function disableModalInputsAndButtons() {
+    $(SROS_MODAL_INPUT).attr("disabled", "true");
+    $(SROS_MODAL_BTN).attr("disabled", "true");
+}
+
+function enableModalInputsAndButtons() {
+    $(SROS_MODAL_INPUT).removeAttr("disabled");
+    $(SROS_MODAL_BTN).removeAttr("disabled");
+}
+
+function showModalBusy(modalId,busyHtml) {
+    hideModalError(modalId);
+    disableModalInputsAndButtons();
+    $(modalId + ' ' + SROS_MODAL_BUSY_TXT).html(busyHtml);
+    $(modalId + ' ' + SROS_MODAL_BUSY_CTR).show();
+}
+
+function hideModalBusy(modalId) {
+    $(modalId + ' ' + SROS_MODAL_BUSY_CTR).hide();
+}
+
+function showModalError(modalId,errorHtml) {
+    hideModalBusy(modalId);
+    enableModalInputsAndButtons();
+    $(modalId + ' ' + SROS_MODAL_ERROR_TXT).html(errorHtml);
+    $(modalId + ' ' + SROS_MODAL_ERROR_CTR).show();
+}
+
+function hideModalError(modalId) {
+    $(modalId + ' ' + SROS_MODAL_ERROR_CTR).hide();
+    $(SROS_MODAL_INPUT).removeClass("invalid");
+}
+
+function showModalInputAsInvalid(fieldId) {
+    $(fieldId).addClass("invalid");
+}
+
+//**************************************************************************************************
+// List Screen Utility Functions
+//**************************************************************************************************
+
+// Toggle sorting items
+$('#filter-options').on('click', 'li', function () {
+    $('#filter-options li').removeClass('active');
+    $(this).addClass('active');
+});
+
+// Expand or collapse list items and their children
+$('#list-screen__root li').on('click', 'h3, h4, .fa-li', function (evt) {
+    // keep click event from bubbling up through all nested lists items
+    evt.stopPropagation();
+    evt.preventDefault();
+
+    // switch between classes: expanded and collapsed
+    // switch out list icons for .fa-li items
+
+    var obj = $(this).closest('li');
+    var action = 'none';
+
+    if (obj.hasClass('collapsed')) action = "expand";
+    if (obj.hasClass('expanded')) action = "collapse";
+
+    $("#profileSearchInput").val("");
+
+    switch (action) {
+        case 'expand':
+            obj.removeClass('collapsed').addClass('expanded');
+            obj.children('.title').children('.fa-li').removeClass('fa-caret-right').addClass('fa-caret-down');
+            obj.children('ul').slideDown('fast');
+            break;
+
+        case 'collapse':
+            obj.removeClass('expanded').addClass('collapsed');
+            obj.children('.title').children('.fa-li').addClass('fa-caret-right').removeClass('fa-caret-down');
+            obj.children('ul').slideUp('fast');
+
+            break;
+
+        default:
+        // not expandable, do nothing.
+    }
+});
+
+function setCompetencyListViewActions() {
+    $('#list-screen__root li').on('click', 'h3, h4, .fa-li', function (evt) {
+        // keep click event from bubbling up through all nested lists items
+        evt.stopPropagation();
+        evt.preventDefault();
+
+        // switch between classes: expanded and collapsed
+        // switch out list icons for .fa-li items
+
+        var obj = $(this).closest('li');
+        var action = 'none';
+
+        if (obj.hasClass('collapsed')) action = "expand";
+        if (obj.hasClass('expanded')) action = "collapse";
+
+        $("#profileSearchInput").val("");
+
+        switch (action) {
+            case 'expand':
+                obj.removeClass('collapsed').addClass('expanded');
+                obj.children('.title').children('.fa-li').removeClass('fa-caret-right').addClass('fa-caret-down');
+                obj.children('ul').slideDown('fast');
+                break;
+
+            case 'collapse':
+                obj.removeClass('expanded').addClass('collapsed');
+                obj.children('.title').children('.fa-li').addClass('fa-caret-right').removeClass('fa-caret-down');
+                obj.children('ul').slideUp('fast');
+
+                break;
+
+            default:
+            // not expandable, do nothing.
+        }
+    });
 }
 
 //**************************************************************************************************

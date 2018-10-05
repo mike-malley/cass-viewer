@@ -9,6 +9,15 @@ body {
 
 /* ---- UTILITY ---- */
 
+.reveal.smaller {
+    width: 40%;
+    max-width: 62.5rem;
+}
+
+.reveal {
+    overflow-y: visible;
+}
+
 ul.no-bullets {
     margin-left: 0;
 }
@@ -84,20 +93,25 @@ body.theme-burgendy #section-sub-menu #frameworkContentsSearchContainer .button:
     background-color: #662a36;
 }
 
-body.theme-burgendy #pageMainContentsContainer h3, h2 {
+body.theme-burgendy #cassUiMainContentsContainer h3, h2 {
     color: #662a36;
 }
 
-body.theme-burgendy #pageMainContentsContainer .gpsi,
+body.theme-burgendy #cassUiMainContentsContainer .gpsi,
 body.theme-burgendy #circleFocusSummarySidebar h3 {
      color: #b36a79;
- }
+}
+
+body.theme-burgendy .dropdown.menu>li.is-dropdown-submenu-parent>a::after {
+    border-color: #b36a79 transparent transparent;
+}
 
 body.theme-burgendy a, circleFocusSummaryListContainer {
     color: #b36a79;
 }
 
-body.theme-burgendy #pageMainContentsContainer a:hover {
+body.theme-burgendy .dropdown.menu .is-active>a,
+body.theme-burgendy a:hover {
     color: #662a36;
 }
 
@@ -342,6 +356,12 @@ body.theme-burgendy .expCircleGraph .label {
     margin-left: 1.2rem;
     font-size: 1rem;
 }
+
+.psiItem.active {
+    font-weight: bold;
+    text-decoration: underline;
+}
+
 
 #fwkShareContactsListHdrContainer {
     margin: auto;
