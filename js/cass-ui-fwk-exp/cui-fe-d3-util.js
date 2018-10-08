@@ -22,28 +22,33 @@ const EXP_CIRCLE_CLASS_PREFIX = "exp_cg_c_";
 //.range(["rgba(156, 213, 92,0)", "rgba(156, 213, 92,1)"])
 
 
-/* Each color section has a 0 - 3 range,
-   represented by -1 - 2 in the functions which update. 0 is the background,
-   the three other colors cycle through depending on deptch.
-*/
-const BURGENDY_RANGE_0 = "rgba(179, 106, 121,0)";
-const BURGENDY_RANGE_2 = "rgba(179, 106, 121,1)";
-const BURGENDY_RANGE_3 = "rgba(212, 191, 194,1)";
-const BURGENDY_RANGE_1 = "rgba(102, 42, 54,1)";
+/*******************************************************
+ Each color section has a 0 - 3 range,
+ represented by -1 - 2 in the functions which update. 0 is the background,
+ the three other colors cycle through depending on deptch.
+ ********************************************************/
+/* burgendy pallette contrast reduced 35% */
+const BURGENDY_RANGE_0 = "rgba(179,106,121,0)";
+const BURGENDY_RANGE_2 = "rgba(151,83,95,1)";
+const BURGENDY_RANGE_3 = "rgba(168,128,132,1)";
+const BURGENDY_RANGE_1 = "rgba(102,42,54,1)";
 
+/* teal pallette contrast reduced 35% */
 const TEAL_RANGE_0 = "rgba(76,193,187,0)";
-const TEAL_RANGE_2 = "rgba(76,193,187,1)";
-const TEAL_RANGE_3 = "rgba(20,63,60,1)";
-const TEAL_RANGE_1 = "rgba(153,216,220,1)";
+const TEAL_RANGE_2 = "rgba(58,138,132,1)";
+const TEAL_RANGE_3 = "rgba(101,147,148,1)";
+const TEAL_RANGE_1 = "rgba(20,63,60,1)";
 
-const BLUE_RANGE_0 = "rgba(17,116,154,0)";
-const BLUE_RANGE_2 = "rgba(17,116,154,1)";
-const BLUE_RANGE_3 = "rgba(218,241,249,1)";
-const BLUE_RANGE_1 = "rgba(13,78,103,1)";
+/* blue pallette, contrast reduced 35% */
+const BLUE_RANGE_0 = "rgba(19,109,145, 0)";
+const BLUE_RANGE_2 = "rgba(19,109,145, 1)";
+const BLUE_RANGE_3 = "rgba(149,190,210, 1)";
+const BLUE_RANGE_1 = "rgba(13,78,103,1)"
 
-const ORANGE_RANGE_0 = "rgba(235,173,135,0)";
-const ORANGE_RANGE_2 = "rgba(235,173,135, 1)";
-const ORANGE_RANGE_3 = "rgba(247,226,214,1)";
+/* blue pallette, contrast reduced 35% */
+const ORANGE_RANGE_0 = "rgba(219,143,98,0)";
+const ORANGE_RANGE_2 = "rgba(219,143,98, 1)";
+const ORANGE_RANGE_3 = "rgba(227,174,140,1)";
 const ORANGE_RANGE_1 = "rgba(199,96,40,1)";
 
 //**************************************************************************************************
@@ -261,32 +266,38 @@ function buildExpGraphCircles(error, root) {
     registerExpD3DetailNodes(nodes);
 
 
-    /* drop shadow filter details
-       needed here to apply to expCgCircl
-    */
+    /************************************
+     drop shadow filter details
+     needed here to apply to expCgCircl
+     ************************************/
     var filter = expCirclePackGraph.append("defs:filter")
         .attr("id", "drop-shadow")
-        .attr("height", "130%");
-
+        .attr("height", "120%")
+        .attr("x", "-10%")
+        .attr("y", "-10%")
     filter.append("feGaussianBlur")
         .attr("in", "SourceAlpha")
         .attr("stdDeviation", 1)
         .attr("result", "blur");
-
     filter.append("feOffset")
         .attr("in", "blur")
-        .attr("dx", 1)
-        .attr("dy", 1)
+        .attr("dx", .5)
+        .attr("dy", .5)
         .attr("result", "offsetBlur");
-
+    //important for opacity reduction on filter
+    var feComponentTransfer = filter.append("feComponentTransfer");
+    feComponentTransfer.append("feFuncA")
+        .attr("in", "offsetBlur")
+        .attr("type", "linear")
+        .attr("slope", ".6")
+        .attr("result", "opacityBlur");
     filter.append("feComposite")
         .attr("operator", "out")
         .attr("in", "sourceGraphic");
-
+    // important for allowing manipulation of hover
     var feMerge = filter.append("feMerge");
-
     feMerge.append("feMergeNode")
-        .attr("in", "offsetBlur")
+        .attr("in", "opacityBlur")
     feMerge.append("feMergeNode")
         .attr("in", "SourceGraphic");
 
@@ -294,11 +305,7 @@ function buildExpGraphCircles(error, root) {
     expCgCircle = expCirclePackGraph.selectAll("circle")
         .data(nodes)
         .enter().append("circle")
-        // .attr("id", function (d) {
-        //     if (d && d.data && d.data.name) return generateExpCgCircleId(d.data.name);
-        //     else return null;
-        // })
-        .attr("class", function (d) {
+            .attr("class", function (d) {
             var classPrefix = d.parent ? d.children ? "node" : "node node--leaf" : "node node--root";
             var classSuffix = "";
             if (d && d.data && d.data.name) classSuffix =  " " + generateExpCgCircleExtendedClass(d.data.name);
@@ -318,9 +325,27 @@ function buildExpGraphCircles(error, root) {
             d3.event.stopPropagation();
         });
 
+
+    /*****************************************************
+     testing adding a rectangle svg behind text
+
+     var rect = expCirclePackGraph.selectAll("rect")
+     .data(nodes)
+     .enter()
+     .append("rect")
+     .attr("width", 20)
+     .attr("height", 20)
+     .style("fill", "#ccc")
+     .style("fill-opacity", ".3")
+     .style("stroke", "#666")
+     .style("stroke-width", "1.5px");
+     ***************************************************/
+
+
     var text = expCirclePackGraph.selectAll("text")
         .data(nodes)
-        .enter().append("text")
+        .enter()
+        .append("text")
         .attr("class", "label")
         .style("fill-opacity", function (d) {
             return d.parent === root ? 1 : 0;
@@ -330,10 +355,13 @@ function buildExpGraphCircles(error, root) {
         })
         .text(function (d) {
             if (typeof getExplorerCgCircleText === 'function') {
-                return cleanCircleText(getExplorerCgCircleText(d),EXP_CIRCLE_TEXT_LIMIT);
+                var circleText = cleanCircleText(getExplorerCgCircleText(d),EXP_CIRCLE_TEXT_LIMIT);
+                return circleText;
             }
             else return "UNDEFINED getFrameworkExpCgCircleText";
-        });
+        })
+
+    ;
 
     expCgNode = expCirclePackGraph.selectAll("circle,text");
 

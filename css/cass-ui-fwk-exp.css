@@ -18,6 +18,10 @@ body {
     overflow-y: visible;
 }
 
+.sticky {
+    z-index: 500;
+}
+
 ul.no-bullets {
     margin-left: 0;
 }
@@ -53,7 +57,7 @@ input:checked~.switch-paddle {
 }
 
 .cassUiBusyImg {
-    height: 7rem;
+    height: 4rem;
     width: auto;
 }
 
@@ -65,6 +69,15 @@ input:checked~.switch-paddle {
 .cassUiError {
     font-size: 3rem;
     color: #F78D05;
+}
+
+.cassUiModalErrorText,
+.cassUiModalBusyText {
+    font-size: .9rem;
+}
+
+.cassUiModalErrorText ul {
+    margin:0;
 }
 
 .cassUiCallout {
@@ -82,9 +95,12 @@ input:checked~.switch-paddle {
     float: right;
 }
 
-/****************************************
-  Burgendy Theme Details
-*****************************************/
+.burgendy {
+    color: #b36a79;
+}
+.burgendy-back {
+    background-color: #b36a79;
+}
 
 body.theme-burgendy #section-sub-menu #frameworkContentsSearchContainer #frameworkExpHeader .button {
     background-color: #662a36;
@@ -93,24 +109,22 @@ body.theme-burgendy #section-sub-menu #frameworkContentsSearchContainer .button:
     background-color: #662a36;
 }
 
-body.theme-burgendy #cassUiMainContentsContainer h3, h2 {
+body.theme-burgendy  h3, h2 {
     color: #662a36;
 }
-
-body.theme-burgendy #cassUiMainContentsContainer .gpsi,
-body.theme-burgendy #circleFocusSummarySidebar h3 {
-     color: #b36a79;
-}
-
-body.theme-burgendy .dropdown.menu>li.is-dropdown-submenu-parent>a::after {
-    border-color: #b36a79 transparent transparent;
-}
-
-body.theme-burgendy a, circleFocusSummaryListContainer {
-    color: #b36a79;
+body.theme-burgendy .gpsi {
+    color: #000;
 }
 
 body.theme-burgendy .dropdown.menu .is-active>a,
+body.theme-burgendy a {
+    color: #000;
+}
+
+body.theme-burgendy .dropdown.menu>li.is-dropdown-submenu-parent>a::after {
+    border-color: #000 transparent transparent;
+}
+
 body.theme-burgendy a:hover {
     color: #662a36;
 }
@@ -121,10 +135,22 @@ body.theme-burgendy .expCircleGraph .node--leaf {
 
 body.theme-burgendy .expCircleGraph .label {
     stroke: rgb(102, 42, 54);
-    stroke-width: 3px;
+    stroke-width: 1px;
     stroke-linecap: butt;
     stroke-linejoin: round;
     /*    text-shadow: 0 1px 0 #000, 1px 0 0 #000, -1px 0 0 #000, 0 -1px 0 #000, 0 2px 0 #000, 2px 0 0 #000, -2px 0 0 #000, 0 -2px 0 #000;*/
+}
+
+body.theme-burgendy #circleFocusDetailsRelList li:hover {
+    color: rgb(151, 83, 95);
+}
+
+body.theme-burgendy #circleFocusDetailsRelList a:hover {
+    color: rgb(151, 83, 95) !important;
+}
+
+body.theme-burgendy #fwkShareContactsListContainer {
+    background-color: #d9bcc1;
 }
 
 /* ---- BADGES/DEGREES ---- */
@@ -213,7 +239,7 @@ body.theme-burgendy .expCircleGraph .label {
 
 #list-screen__root .competency-type .fa {
     font-size: 1.3em;
-    /*    color: black;*/
+    /*    color: #000;*/
 }
 
 /* ---- CIRCLE GRAPH SCREEN ---- */
@@ -248,7 +274,6 @@ body.theme-burgendy .expCircleGraph .label {
 
 .expCircleGraph .node {
     cursor: pointer;
-    filter: url(#drop-shadow);
 }
 
 .expCircleGraph .node:hover {
@@ -264,11 +289,23 @@ body.theme-burgendy .expCircleGraph .label {
 
 .expCircleGraph .label {
     fill: #fff;
+    font-size: 12px;
+    text-anchor: middle;
+    paint-order: stroke;
+    stroke: rgb(19, 116, 153);
+    stroke-width: 1px;
+    font-weight:600;
+    stroke-linecap: butt;
+    stroke-linejoin: round;
+}
+
+.expCircleGraph .label-background {
+    fill: #fff;
     font-size: .6rem;
     text-anchor: middle;
     paint-order: stroke;
     stroke: rgb(19, 116, 153);
-    stroke-width: 3px;
+    stroke-width: 1px;
     stroke-linecap: butt;
     stroke-linejoin: round;
 }
@@ -290,8 +327,7 @@ body.theme-burgendy .expCircleGraph .label {
     cursor: pointer;
 }
 
-.cassUiModalInput,
-.cassUiModalTextArea {
+.cassUiModalInput {
     width: 37rem;
     margin-left: 1.5rem;
 }
@@ -299,6 +335,11 @@ body.theme-burgendy .expCircleGraph .label {
 .cassUiModalTextArea {
     height: 8rem;
     resize: none;
+}
+
+.cassUiModalInput.invalid {
+    background-color: #F3CB7A;
+    border-color: #EA6E07;
 }
 
 #circleFocusDetailsSingleDesc {
@@ -385,7 +426,6 @@ body.theme-burgendy .expCircleGraph .label {
     margin: auto;
     margin-bottom: 1.5rem;
     width: 80%;
-    background-color: #cceeff;
     border-color: #d9d9d9;
     border-style: solid;
     border-radius: 5px;

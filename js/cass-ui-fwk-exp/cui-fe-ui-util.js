@@ -30,6 +30,13 @@ const CASSUI_MAIN_ERR_TXT = "#cassUiMainErrorText";
 const CASSUI_HIGH_LVL_WARNING = ".cassUiHighLevelWarning";
 const CASSUI_MAIN_CONTENTS_CTR = "#cassUiMainContentsContainer";
 
+const CASSUI_MODAL_INPUT = ".cassUiModalInput";
+const CASSUI_MODAL_BTN = ".cassUiModalButton";
+const CASSUI_MODAL_BUSY_CTR = ".cassUiModalBusyCtr";
+const CASSUI_MODAL_BUSY_TXT = ".cassUiModalBusyText";
+const CASSUI_MODAL_ERROR_CTR = ".cassUiModalErrorCtr";
+const CASSUI_MODAL_ERROR_TXT = ".cassUiModalErrorText";
+
 const SHOW_GRAPH_VIEW_BTN = "#showGraphViewBtn";
 const SHOW_LIST_VIEW_BTN = "#showListViewBtn";
 
@@ -44,6 +51,8 @@ const FWK_CONTENTS_LIST = "#list-screen__root";
 const FWK_EXP_PAGE_TOOLS = "#page-tools";
 const FWK_EXP_SHARE_TOOL = "#fwkExpShareTool";
 const FWK_EXP_PUB_TOOL = "#fwkExpPublishTool";
+const FWK_EXP_FULL_TOOLSET = "#fwkExpFullToolset";
+const FWK_EXP_OPEN_ONLY_TOOLSET = "#fwkExpOpenFwkOnlyToolset";
 
 //Circle Focus Detail Summary (left-hand side)/ Sidebar (right-hand side)  Items
 const CIR_FCS_DTL_CTR = "#circleFocusDetailsSidebar";
@@ -52,8 +61,6 @@ const CIR_FCS_DTL_SING_NAME = "#circleFocusDetailsSingleName";
 const CIR_FCS_DTL_SING_DESC = "#circleFocusDetailsSingleDesc";
 const CIR_FCS_COMP_TOOLS = "#circleFocusCompTools";
 const CIR_FCS_DTL_COMP_DTL_LINK = "#circleFocusCompDetailsLink";
-const CIR_FCS_DTL_COMP_CONF = "#circleFocusCompConfIcon";
-const CIR_FCS_DTL_ASR_LIST_CTR = "#circleFocusDetailsAssertionListContainer";
 
 const CIR_FCS_SUM_DESC = "#circleFocusSummaryDesc";
 const CIR_FCS_SUM_LIST_CTR = "#circleFocusSummaryListContainer";
@@ -72,6 +79,13 @@ const CIRC_DEPEND_WARNING_CTR = "#circularDependencyWarningContainer";
 const OPEN_FWK_MODAL = "#modal-open-framework";
 const OPEN_FWK_SRCH_INPT = "#openFrameworkSearchInput";
 
+// Competency Info Modal
+const COMP_DTL_MODAL = "#modal-competency-info";
+const COMP_DTL_NAME = "#compDetCompName";
+const COMP_DTL_DESC = "#compDetCompDesc";
+const COMP_DTL_COMP_LINK = "#compDetCompLink";
+const COMP_DTL_FRM_LINK = "#compDetFrameworkLink";
+const COMP_DTL_SAVE_BTN = "#fwkExpCompInfoSaveBtn";
 
 // Framework Share Modal
 const FWK_SHARE_MODAL = "#modal-framework-share";
@@ -81,20 +95,12 @@ const FWK_SHARE_NO_CONT_CTR = "#fwkShareNoContactsContainer";
 const FWK_SHARE_CONT_LIST_HDR_CTR = "#fwkShareContactsListHdrContainer";
 const FWK_SHARE_CONT_LIST_CTR = "#fwkShareContactsListContainer";
 const FWK_SHARE_CONT_LIST = "#fwkShareContactsList";
-const FWK_SHARE_BUSY_CTR = "#fwkShareBusyCtr";
-const FWK_SHARE_BUSY_TXT = "#fwkShareBusyCtrText";
-const FWK_SHARE_ERROR_CTR = "#fwkShareErrorCtr";
-const FWK_SHARE_ERROR_TXT = "#fwkShareErrorText";
 const FWK_SHARE_CONT_VW_CB_ID_PREFIX = "fwk_share_cont_vw_";
 const FWK_SHARE_CONT_ED_CB_ID_PREFIX = "fwk_share_cont_ed_";
 
 // Framework Publish Modal
 const FWK_PUBLISH_MODAL = "#modal-framework-publish";
 const FWK_PUBLISH_FWK_NAME = "#fwkPublishFwkName";
-const FWK_PUBLISH_BUSY_CTR = "#fwkPublishBusyCtr";
-const FWK_PUBLISH_BUSY_TXT = "#fwkPublishBusyCtrText";
-const FWK_PUBLISH_ERROR_CTR = "#fwkPublishErrorCtr";
-const FWK_PUBLISH_ERROR_TXT = "#fwkPublishErrorText";
 const FWK_PUBLISH_DEST = "#fwkPublishDestination";
 
 //**************************************************************************************************
@@ -122,6 +128,12 @@ queryParams = function () {
 
 queryParams = queryParams();
 
+function showOnlyOpenFrameworkTool() {
+    $(FWK_EXP_FULL_TOOLSET).hide();
+    $(FWK_EXP_OPEN_ONLY_TOOLSET).show();
+    $(FWK_EXP_PAGE_TOOLS).show();
+}
+
 function hideFrameworkExpTools() {
     $(FWK_EXP_PAGE_TOOLS).hide();
 }
@@ -135,6 +147,8 @@ function setUpAndShowFrameworkExpTools() {
         $(FWK_EXP_SHARE_TOOL).hide();
         $(FWK_EXP_PUB_TOOL).hide();
     }
+    $(FWK_EXP_OPEN_ONLY_TOOLSET).hide();
+    $(FWK_EXP_FULL_TOOLSET).show();
     $(FWK_EXP_PAGE_TOOLS).show();
 }
 
@@ -189,6 +203,7 @@ function showPageError(text) {
     $(CASSUI_MAIN_ERR_TXT).html(text);
     $(CASSUI_MAIN_ERR_CTR).show();
     disableViewToggleButtons();
+    showOnlyOpenFrameworkTool();
 }
 
 function showCircleSidebarDetails() {
@@ -249,6 +264,7 @@ function showNoFrameworksAvailableWarning() {
     $(CASSUI_HIGH_LVL_WARNING).hide();
     setPageFrameworkExplorerName("No frameworks available");
     $(NO_FRAMEWORKS_AVAILABLE_CTR).show();
+    showOnlyOpenFrameworkTool();
 }
 
 function showFrameworkHasCircularDependencyWarning() {
@@ -256,6 +272,44 @@ function showFrameworkHasCircularDependencyWarning() {
     $(CASSUI_MAIN_ERR_CTR).hide();
     $(CASSUI_HIGH_LVL_WARNING).hide();
     $(CIRC_DEPEND_WARNING_CTR).show();
+    showOnlyOpenFrameworkTool();
+}
+
+function disableModalInputsAndButtons() {
+    $(CASSUI_MODAL_INPUT).attr("disabled", "true");
+    $(CASSUI_MODAL_BTN).attr("disabled", "true");
+}
+
+function enableModalInputsAndButtons() {
+    $(CASSUI_MODAL_INPUT).removeAttr("disabled");
+    $(CASSUI_MODAL_BTN).removeAttr("disabled");
+}
+
+function showModalBusy(modalId,busyHtml) {
+    hideModalError(modalId);
+    disableModalInputsAndButtons();
+    $(modalId + ' ' + CASSUI_MODAL_BUSY_TXT).html(busyHtml);
+    $(modalId + ' ' + CASSUI_MODAL_BUSY_CTR).show();
+}
+
+function hideModalBusy(modalId) {
+    $(modalId + ' ' + CASSUI_MODAL_BUSY_CTR).hide();
+}
+
+function showModalError(modalId,errorHtml) {
+    hideModalBusy(modalId);
+    enableModalInputsAndButtons();
+    $(modalId + ' ' + CASSUI_MODAL_ERROR_TXT).html(errorHtml);
+    $(modalId + ' ' + CASSUI_MODAL_ERROR_CTR).show();
+}
+
+function hideModalError(modalId) {
+    $(modalId + ' ' + CASSUI_MODAL_ERROR_CTR).hide();
+    $(CASSUI_MODAL_INPUT).removeClass("invalid");
+}
+
+function showModalInputAsInvalid(fieldId) {
+    $(fieldId).addClass("invalid");
 }
 
 function goToDisplayRoot() {
@@ -269,42 +323,25 @@ function generateAnchorLink(href, text, target) {
     return "<a href=\"" + href + "\" target=\"" + target + "\">" + escapeSingleQuote(text) + "</a>";
 }
 
-function disableModalInputsAndButtons() {
-    $(SROS_MODAL_INPUT).attr("disabled", "true");
-    $(SROS_MODAL_BTN).attr("disabled", "true");
+function buildFrameworkHyperlink(frameworkId,frameworkName) {
+    return generateAnchorLink("https://cassproject.github.io/cass-editor/?frameworkId=" + frameworkId + "&view=true", frameworkName, frameworkName);
 }
 
-function enableModalInputsAndButtons() {
-    $(SROS_MODAL_INPUT).removeAttr("disabled");
-    $(SROS_MODAL_BTN).removeAttr("disabled");
+function buildFrameworkCompetencyHyperlink(frameworkId,competencyId,competencyName) {
+    return generateAnchorLink("https://cassproject.github.io/cass-editor/?frameworkId=" + frameworkId + "&competencyId=" +  + "&view=true", competencyName, competencyName);
 }
 
-function showModalBusy(modalId,busyHtml) {
-    hideModalError(modalId);
-    disableModalInputsAndButtons();
-    $(modalId + ' ' + SROS_MODAL_BUSY_TXT).html(busyHtml);
-    $(modalId + ' ' + SROS_MODAL_BUSY_CTR).show();
-}
+if ( typeof String.prototype.startsWith != 'function' ) {
+    String.prototype.startsWith = function( str ) {
+        return str.length > 0 && this.substring( 0, str.length ) === str;
+    }
+};
 
-function hideModalBusy(modalId) {
-    $(modalId + ' ' + SROS_MODAL_BUSY_CTR).hide();
-}
-
-function showModalError(modalId,errorHtml) {
-    hideModalBusy(modalId);
-    enableModalInputsAndButtons();
-    $(modalId + ' ' + SROS_MODAL_ERROR_TXT).html(errorHtml);
-    $(modalId + ' ' + SROS_MODAL_ERROR_CTR).show();
-}
-
-function hideModalError(modalId) {
-    $(modalId + ' ' + SROS_MODAL_ERROR_CTR).hide();
-    $(SROS_MODAL_INPUT).removeClass("invalid");
-}
-
-function showModalInputAsInvalid(fieldId) {
-    $(fieldId).addClass("invalid");
-}
+if ( typeof String.prototype.endsWith != 'function' ) {
+    String.prototype.endsWith = function( str ) {
+        return str.length > 0 && this.substring( this.length - str.length, this.length ) === str;
+    }
+};
 
 //**************************************************************************************************
 // List Screen Utility Functions

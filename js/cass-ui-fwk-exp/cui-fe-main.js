@@ -3,12 +3,15 @@
 //**************************************************************************************************
 
 //TODO implement prepFrameworkAlignmentWithFrameworkIds
+//TODO implement openAlignmentSetupModal
+
 //TODO addChildToGraphProfileSummary construct list view for multi node competency cluster
 //TODO addChildToListView construct list view for multi node competency cluster
 //TODO showCircleGraphSidebarDetails handle multi node packets
-//TODO implement openAlignmentSetupModal
-//todo implement openShareFrameworkModal
-//todo implement openPublishFrameworkModal
+
+//TODO toggleGraphProfileSummaryChild figure out bug with this
+//TODO saveFrameworkPublish define and implement
+
 
 //**************************************************************************************************
 // Constants
@@ -130,150 +133,233 @@ function getExplorerCgCircleText(d) {
 // Share/Publish Framework Modal
 //**************************************************************************************************
 
-// function handleSaveFrameworkForShareSuccess() {
-//     $(FWK_SHARE_BUSY_CTR).hide();
-//     $(FWK_SHARE_MODAL).foundation('close');
-// }
-//
-// function handleSaveFrameworkForShareFailure(err) {
-//     $(FWK_SHARE_BUSY_CTR).hide();
-//     $(FWK_SHARE_ERROR_TXT).html(err);
-//     $(FWK_SHARE_ERROR_CTR).show();
-// }
-//
-// function setFrameworkShareState() {
-//     for (var i=0;i<contactDisplayList.length;i++) {
-//         var cdo = contactDisplayList[i];
-//         if (cdo.pkPem != loggedInPkPem){
-//             var editCheckBoxId = buildFrameworkShareEditCheckBoxId(cdo.pkPem);
-//             var viewCheckBoxId = buildFrameworkShareViewCheckBoxId(cdo.pkPem);
-//             var isAssignedEdit = $("#" + editCheckBoxId).prop("checked");
-//             var isAssignedView = $("#" + viewCheckBoxId).prop("checked");
-//             if (isAssignedEdit) currentFrameworkFull.addOwner(cdo.pk);
-//             else currentFrameworkFull.removeOwner(cdo.pk);
-//             if (isAssignedView) currentFrameworkFull.addReader(cdo.pk);
-//             else currentFrameworkFull.removeReader(cdo.pk);
-//         }
-//     }
-// }
-//
-// function saveFrameworkShare() {
-//     $(FWK_SHARE_BUSY_CTR).show();
-//     setFrameworkShareState();
-//     currentFrameworkFull.save(handleSaveFrameworkForShareSuccess,handleSaveFrameworkForShareFailure,repo);
-// }
-//
-// function buildFrameworkShareContactListLineItem(cntName,viewCheckBoxId,editCheckBoxId,viewChecked,editChecked) {
-//     var cntLi = $("<li/>");
-//     var cntGridDiv = $("<div/>");
-//     cntGridDiv.addClass("grid-x");
-//     var cntNameLi  = $("<div/>");
-//     cntNameLi.addClass("cell medium-8");
-//     cntNameLi.html("<span>" + cntName + "</span>");
-//     cntGridDiv.append(cntNameLi);
-//     var cntViewDiv  = $("<div/>");
-//     cntViewDiv.addClass("cell medium-2 centerText");
-//     var cntViewDivHtml = "<input id=\"" + viewCheckBoxId + "\" type=\"checkbox\"";
-//     if (viewChecked) cntViewDivHtml += " checked ";
-//     cntViewDivHtml += "></input>";
-//     cntViewDiv.html(cntViewDivHtml);
-//     cntGridDiv.append(cntViewDiv);
-//     var cntEditDiv  = $("<div/>");
-//     cntEditDiv.addClass("cell medium-2 centerText");
-//     var cntEditDivHtml = "<input id=\"" + editCheckBoxId + "\" type=\"checkbox\"";
-//     if (editChecked) cntEditDivHtml += " checked ";
-//     cntEditDivHtml += "></input>";
-//     cntEditDiv.html(cntEditDivHtml);
-//     cntGridDiv.append(cntEditDiv);
-//     cntLi.append(cntGridDiv);
-//     return cntLi;
-// }
-//
-// function buildFrameworkShareEditCheckBoxId(contPkPem) {
-//     return FWK_SHARE_CONT_ED_CB_ID_PREFIX + buildIDableString(contPkPem);
-// }
-//
-// function buildFrameworkShareViewCheckBoxId(contPkPem) {
-//     return FWK_SHARE_CONT_VW_CB_ID_PREFIX + buildIDableString(contPkPem);
-// }
-//
-// function buildContactListForFrameworkShare() {
-//     $(FWK_SHARE_CONT_LIST).empty();
-//     for (var i=0;i<contactDisplayList.length;i++) {
-//         var cdo = contactDisplayList[i];
-//         if (cdo.pkPem != loggedInPkPem && !cdo.hide){
-//             var cntName = cdo.displayName;
-//             var editCheckBoxId = buildFrameworkShareEditCheckBoxId(cdo.pkPem);
-//             var viewCheckBoxId = buildFrameworkShareViewCheckBoxId(cdo.pkPem);
-//             var viewChecked = currentFrameworkFull.hasReader(cdo.pk);;
-//             var editChecked = currentFrameworkFull.hasOwner(cdo.pk);
-//             var cntLi = buildFrameworkShareContactListLineItem(cntName,viewCheckBoxId,editCheckBoxId,viewChecked,editChecked);
-//             $(FWK_SHARE_CONT_LIST).append(cntLi);
-//         }
-//     }
-// }
-//
-// function setUpFrameworkShareModalView() {
-//     $(FWK_SHARE_BUSY_CTR).hide();
-//     $(FWK_SHARE_ERROR_CTR).hide();
-//     $(FWK_SHARE_FWK_NAME).html(currentFrameworkName);
-//     if (contactDisplayList && contactDisplayList.length > 0) {
-//         buildContactListForFrameworkShare();
-//         $(FWK_SHARE_NO_CONT_CTR).hide();
-//         $(FWK_SHARE_CONT_LIST_HDR_CTR).show();
-//         $(FWK_SHARE_CONT_LIST_CTR).show();
-//         $(FWK_SHARE_SAVE_BTN).show();
-//     }
-//     else {
-//         $(FWK_SHARE_CONT_LIST_HDR_CTR).hide();
-//         $(FWK_SHARE_CONT_LIST_CTR).hide();
-//         $(FWK_SHARE_SAVE_BTN).hide();
-//         $(FWK_SHARE_NO_CONT_CTR).show();
-//     }
-// }
+function handleSaveFrameworkForShareSuccess() {
+    hideModalBusy(FWK_SHARE_MODAL);
+    enableModalInputsAndButtons();
+    $(FWK_SHARE_MODAL).foundation('close');
+}
+
+function handleSaveFrameworkForShareFailure(err) {
+    hideModalBusy(FWK_SHARE_MODAL);
+    enableModalInputsAndButtons();
+    showModalError(FWK_SHARE_MODAL,"Framework sharing failed: " + err);
+}
+
+function setFrameworkShareState() {
+    for (var i=0;i<contactDisplayList.length;i++) {
+        var cdo = contactDisplayList[i];
+        if (cdo.pkPem != loggedInPkPem){
+            var editCheckBoxId = buildFrameworkShareEditCheckBoxId(cdo.pkPem);
+            var viewCheckBoxId = buildFrameworkShareViewCheckBoxId(cdo.pkPem);
+            var isAssignedEdit = $("#" + editCheckBoxId).prop("checked");
+            var isAssignedView = $("#" + viewCheckBoxId).prop("checked");
+            if (isAssignedEdit) currentFrameworkFull.addOwner(cdo.pk);
+            else currentFrameworkFull.removeOwner(cdo.pk);
+            if (isAssignedView) currentFrameworkFull.addReader(cdo.pk);
+            else currentFrameworkFull.removeReader(cdo.pk);
+        }
+    }
+}
+
+function saveFrameworkShare() {
+    hideModalError(FWK_SHARE_MODAL);
+    showModalBusy(FWK_SHARE_MODAL,"Sharing framework...");
+    disableModalInputsAndButtons();
+    setFrameworkShareState();
+    currentFrameworkFull.save(handleSaveFrameworkForShareSuccess,handleSaveFrameworkForShareFailure,repo);
+}
+
+function buildFrameworkShareContactListLineItem(cntName,viewCheckBoxId,editCheckBoxId,viewChecked,editChecked) {
+    var cntLi = $("<li/>");
+    var cntGridDiv = $("<div/>");
+    cntGridDiv.addClass("grid-x");
+    var cntNameLi  = $("<div/>");
+    cntNameLi.addClass("cell medium-8");
+    cntNameLi.html("<span>" + cntName + "</span>");
+    cntGridDiv.append(cntNameLi);
+    var cntViewDiv  = $("<div/>");
+    cntViewDiv.addClass("cell medium-2 text-center");
+    var cntViewDivHtml = "<input id=\"" + viewCheckBoxId + "\" type=\"checkbox\"";
+    if (viewChecked) cntViewDivHtml += " checked ";
+    cntViewDivHtml += "></input>";
+    cntViewDiv.html(cntViewDivHtml);
+    cntGridDiv.append(cntViewDiv);
+    var cntEditDiv  = $("<div/>");
+    cntEditDiv.addClass("cell medium-2 text-center");
+    var cntEditDivHtml = "<input id=\"" + editCheckBoxId + "\" type=\"checkbox\"";
+    if (editChecked) cntEditDivHtml += " checked ";
+    cntEditDivHtml += "></input>";
+    cntEditDiv.html(cntEditDivHtml);
+    cntGridDiv.append(cntEditDiv);
+    cntLi.append(cntGridDiv);
+    return cntLi;
+}
+
+function buildFrameworkShareEditCheckBoxId(contPkPem) {
+    return FWK_SHARE_CONT_ED_CB_ID_PREFIX + buildIDableString(contPkPem);
+}
+
+function buildFrameworkShareViewCheckBoxId(contPkPem) {
+    return FWK_SHARE_CONT_VW_CB_ID_PREFIX + buildIDableString(contPkPem);
+}
+
+function buildContactListForFrameworkShare() {
+    $(FWK_SHARE_CONT_LIST).empty();
+    for (var i=0;i<contactDisplayList.length;i++) {
+        var cdo = contactDisplayList[i];
+        if (cdo.pkPem != loggedInPkPem && !cdo.hide){
+            var cntName = cdo.displayName;
+            var editCheckBoxId = buildFrameworkShareEditCheckBoxId(cdo.pkPem);
+            var viewCheckBoxId = buildFrameworkShareViewCheckBoxId(cdo.pkPem);
+            var viewChecked = currentFrameworkFull.hasReader(cdo.pk);;
+            var editChecked = currentFrameworkFull.hasOwner(cdo.pk);
+            var cntLi = buildFrameworkShareContactListLineItem(cntName,viewCheckBoxId,editCheckBoxId,viewChecked,editChecked);
+            $(FWK_SHARE_CONT_LIST).append(cntLi);
+        }
+    }
+}
+
+function setUpFrameworkShareModalView() {
+    $(FWK_SHARE_FWK_NAME).html(currentFrameworkName);
+    if (contactDisplayList && contactDisplayList.length > 0) {
+        buildContactListForFrameworkShare();
+        $(FWK_SHARE_NO_CONT_CTR).hide();
+        $(FWK_SHARE_CONT_LIST_HDR_CTR).show();
+        $(FWK_SHARE_CONT_LIST_CTR).show();
+        $(FWK_SHARE_SAVE_BTN).show();
+    }
+    else {
+        $(FWK_SHARE_CONT_LIST_HDR_CTR).hide();
+        $(FWK_SHARE_CONT_LIST_CTR).hide();
+        $(FWK_SHARE_SAVE_BTN).hide();
+        $(FWK_SHARE_NO_CONT_CTR).show();
+    }
+}
 
 function openShareFrameworkModal() {
-    //todo implement openShareFrameworkModal
-    alert("TODO implement openShareFrameworkModal");
-    // setUpFrameworkShareModalView();
-    // $(FWK_SHARE_MODAL).foundation('open');
+    enableModalInputsAndButtons();
+    hideModalError(FWK_SHARE_MODAL);
+    hideModalBusy(FWK_SHARE_MODAL);
+    setUpFrameworkShareModalView();
+    $(FWK_SHARE_MODAL).foundation('open');
 }
 
-// function isValidPublishDataFromFrameworkPublish() {
-//     var dest = $(FWK_PUBLISH_DEST).val();
-//     if (!dest || dest.length == 0) {
-//         $(FWK_PUBLISH_ERROR_TXT).html("You must select at least one destination");
-//         $(FWK_PUBLISH_ERROR_CTR).show();
-//         return false;
-//     }
-//     return true;
-// }
-//
-// //This function doesn't really do anything at the moment
-// // Just a place holder for future functionality
-// function saveFrameworkPublish() {
-//     $(FWK_PUBLISH_ERROR_CTR).hide();
-//     if (isValidPublishDataFromFrameworkPublish()) {
-//         $(FWK_PUBLISH_BUSY_TXT).html("Publishing Frameworks...");
-//         $(FWK_PUBLISH_BUSY_CTR).show();
-//         setTimeout(function() {$(FWK_PUBLISH_BUSY_CTR).hide();}, 3000);
-//     }
-// }
-//
-// function setUpFrameworkPublishModalView() {
-//     $(FWK_PUBLISH_DEST).val([]);
-//     $(FWK_PUBLISH_DEST + ":selected").prop("selected", false);
-//     $(FWK_PUBLISH_BUSY_CTR).hide();
-//     $(FWK_PUBLISH_ERROR_CTR).hide();
-//     $(FWK_PUBLISH_FWK_NAME).html(currentFrameworkName);
-// }
+function isValidPublishDataFromFrameworkPublish() {
+    var dest = $(FWK_PUBLISH_DEST).val();
+    if (!dest || dest.length == 0) {
+        showModalError(FWK_PUBLISH_MODAL,"You must select at least one destination");
+        return false;
+    }
+    return true;
+}
+
+//TODO saveFrameworkPublish define and implement
+//This function doesn't really do anything at the moment
+// Just a place holder for future functionality
+function saveFrameworkPublish() {
+    hideModalError(FWK_PUBLISH_MODAL);
+    if (isValidPublishDataFromFrameworkPublish()) {
+        showModalBusy(FWK_PUBLISH_MODAL,"Publishing framework...");
+        setTimeout(function() {hideModalBusy(FWK_PUBLISH_MODAL);}, 3000);
+    }
+}
+
+function setUpFrameworkPublishModalView() {
+    $(FWK_PUBLISH_DEST).val([]);
+    $(FWK_PUBLISH_DEST + ":selected").prop("selected", false);
+    $(FWK_PUBLISH_FWK_NAME).html(currentFrameworkName);
+}
 
 function openPublishFrameworkModal() {
-    //todo implement openPublishFrameworkModal
-    alert("TODO implement openPublishFrameworkModal");
-    // setUpFrameworkPublishModalView();
-    // $(FWK_PUBLISH_MODAL).foundation('open');
+    enableModalInputsAndButtons();
+    hideModalError(FWK_PUBLISH_MODAL);
+    hideModalBusy(FWK_PUBLISH_MODAL);
+    setUpFrameworkPublishModalView();
+    $(FWK_PUBLISH_MODAL).foundation('open');
 }
+
+//**************************************************************************************************
+// Competency Details Modal
+//**************************************************************************************************
+
+function saveCompetencyInfoFromFrameworkExpSuccess() {
+    zoomToCompetencyOnOpen = true;
+    screenToZoomOnOpen = currentScreen;
+    loadAndOpenFramework(currentFrameworkId);
+    enableModalInputsAndButtons();
+    hideModalBusy(COMP_DTL_MODAL);
+    $(COMP_DTL_MODAL).foundation('close');
+}
+
+function saveCompetencyInfoFromFrameworkExpFailure(err) {
+    hideModalBusy(COMP_DTL_MODAL);
+    showModalError(COMP_DTL_MODAL,"Competency save failed: " + err);
+    enableModalInputsAndButtons();
+    if (userOwnsCurrentFramework) {
+        $(COMP_DTL_NAME).prop('readonly', false);
+        $(COMP_DTL_DESC).prop('readonly', false);
+        $(COMP_DTL_SAVE_BTN).show();
+    }
+}
+
+function getCompetencyForSaveFromFrameworkExpSuccess(ecc) {
+    var compName = $(COMP_DTL_NAME).val().trim();
+    compNameToZoom = compName;
+    ecc.name = compName;
+    ecc.description = $(COMP_DTL_DESC).val().trim();
+    ecc.save(saveCompetencyInfoFromFrameworkExpSuccess,saveCompetencyInfoFromFrameworkExpFailure,repo);
+}
+
+function isValidCompetencyDataFromFrameworkExp() {
+    var compName = $(COMP_DTL_NAME).val();
+    if (!compName || !compName.trim() || compName.trim().length <= 0) {
+        showModalInputAsInvalid(COMP_DTL_NAME);
+        showModalError(COMP_DTL_MODAL,"You must enter a competency name");
+        return false;
+    }
+    return true;
+}
+
+function saveCompetencyInfoFromFrameworkExp() {
+    hideModalError(COMP_DTL_MODAL);
+    if (competencyIdToSave && isValidCompetencyDataFromFrameworkExp()) {
+        disableModalInputsAndButtons();
+        showModalBusy(COMP_DTL_MODAL,"Saving competency...");
+        EcCompetency.get(competencyIdToSave,getCompetencyForSaveFromFrameworkExpSuccess,saveCompetencyInfoFromFrameworkExpFailure);
+    }
+}
+
+function setUpCompetencyDetailsModalView(comp) {
+    $(COMP_DTL_NAME).val(comp.getName().trim());
+    $(COMP_DTL_DESC).val(comp.getDescription().trim());
+    $(COMP_DTL_COMP_LINK).html(buildFrameworkCompetencyHyperlink(currentFrameworkId,comp.id,comp.getName().trim()));
+    $(COMP_DTL_FRM_LINK).html(buildFrameworkHyperlink(currentFrameworkId,currentFrameworkName));
+    if (userOwnsCurrentFramework) {
+        competencyIdToSave = comp.getId();
+        $(COMP_DTL_NAME).prop('readonly', false);
+        $(COMP_DTL_DESC).prop('readonly', false);
+        $(COMP_DTL_SAVE_BTN).show();
+    }
+    else {
+        competencyIdToSave = null;
+        $(COMP_DTL_NAME).prop('readonly', true);
+        $(COMP_DTL_DESC).prop('readonly', true);
+        $(COMP_DTL_SAVE_BTN).hide();
+    }
+}
+
+function openCompetencyDetailsModal(compId) {
+    var cpt = currentFrameworkCompetencyData.competencyPacketDataMap[compId];
+    if (!cpt) return;
+    var comp = cpt.cassNodePacket.getNodeList()[0];
+    if (!comp) return;
+    setUpCompetencyDetailsModalView(comp);
+    enableModalInputsAndButtons();
+    hideModalError(COMP_DTL_MODAL);
+    hideModalBusy(COMP_DTL_MODAL);
+    $(COMP_DTL_MODAL).foundation('open');
+}
+
 
 //**************************************************************************************************
 // Open Framework Auto Complete/Modal
@@ -281,6 +367,9 @@ function openPublishFrameworkModal() {
 
 function openFrameworkOpenModal() {
     clearOpenFrameworkSearchBar();
+    enableModalInputsAndButtons();
+    hideModalError(OPEN_FWK_MODAL);
+    hideModalBusy(OPEN_FWK_MODAL);
     $(OPEN_FWK_MODAL).foundation('open');
 }
 
@@ -398,7 +487,7 @@ function scrollToCompInListView(compName) {
 
 function generateCompetencyLineItemHtmlForListView(cpt, compNode, hasChildren) {
     var liHtml = "<span class=\"competency-type\">" +
-        "<a onclick=\"showCompetencyDetailsModal('" + compNode.getId().trim() + "');\">" +
+        "<a onclick=\"openCompetencyDetailsModal('" + compNode.getId().trim() + "');\">" +
         "<i class=\"fa fa-info-circle\" title=\"Show more details\" aria-hidden=\"true\"></i></a></span>" +
         "<h4 class=\"title\">";
     if (hasChildren) liHtml += "<i class=\"fa-li fa fa-caret-right\"></i>";
@@ -492,7 +581,7 @@ function showCompetencyGraphSidebarSingleNodePacketDetails(cpt) {
     scrollCompNodeInGraphViewSummary(compNode);
     $(CIR_FCS_COMP_TOOLS).show();
     $(CIR_FCS_DTL_COMP_DTL_LINK).off("click").click(function () {
-        showCompetencyDetailsModal(compNode.getId().trim());
+        openCompetencyDetailsModal(compNode.getId().trim());
     });
     $(CIR_FCS_DTL_SING_NAME).html(compNode.getName().trim());
     if (compNode.getDescription() && compNode.getDescription().trim().length > 0) {
@@ -509,17 +598,16 @@ function showCompetencyGraphSidebarSingleNodePacketDetails(cpt) {
 function showCircleGraphSidebarDetails(compId) {
     hideCirlceSidebarDetails();
     if (!compId || compId == null) return;
-    var cpt = currentFrameworkCompetencyData.competencyPacketDataMap[compId];
-    if (!cpt || cpt == null) debugMessage("Cannot locate competency tracker for: " + compId);
-    else if (cpt.isFramework) {
-        hideCirlceSidebarDetails();
-        removeAllGraphViewSummaryHighLighting();
-    }
+    else if (compId == currentFrameworkName) removeAllGraphViewSummaryHighLighting();
     else {
-        if (!cpt.cassNodePacket || cpt.cassNodePacket == null) debugMessage("cpt.cassNodePacket is null: " + compId);
-        else if (!cpt.cassNodePacket.getNodeList() || cpt.cassNodePacket.getNodeList() == null) debugMessage("cpt.cassNodePacket.getNodePacketList() is null: " + compId);
-        else if (cpt.cassNodePacket.getNodeList().length == 1) showCompetencyGraphSidebarSingleNodePacketDetails(cpt);
-        //else showCompetencyGraphSidebarMultiNodePacketDetails(cpt);
+        var cpt = currentFrameworkCompetencyData.competencyPacketDataMap[compId];
+        if (!cpt || cpt == null) debugMessage("Cannot locate competency tracker for: " + compId);
+        else {
+            if (!cpt.cassNodePacket || cpt.cassNodePacket == null) debugMessage("cpt.cassNodePacket is null: " + compId);
+            else if (!cpt.cassNodePacket.getNodeList() || cpt.cassNodePacket.getNodeList() == null) debugMessage("cpt.cassNodePacket.getNodePacketList() is null: " + compId);
+            else if (cpt.cassNodePacket.getNodeList().length == 1) showCompetencyGraphSidebarSingleNodePacketDetails(cpt);
+            //else showCompetencyGraphSidebarMultiNodePacketDetails(cpt);
+        }
     }
 }
 
@@ -565,6 +653,7 @@ function buildProfileSummaryItemElementId(compNode) {
     return buildIDableString(compNode.getId().trim()) + "_psi";
 }
 
+//TODO toggleGraphProfileSummaryChild figure out bug with this
 function toggleGraphProfileSummaryChild(ce) {
     if (ce.find('i:first').hasClass("fa-chevron-circle-right")) {
         ce.find('i:first').attr("class", "fa fa-chevron-circle-down");
