@@ -6,7 +6,11 @@
 // Constants
 
 const ALIGN_MESSAGE = "gotoAlign";
+const WAITING_MESSAGE = "waiting";
+
 const FWK_TO_FWK_ALIGN_TYPE = "fwkToFwk";
+
+const INIT_IDENTITY_ACTION = "initIdentity";
 
 //**************************************************************************************************
 // Action Executions
@@ -23,9 +27,9 @@ function performInitIdentityAction(data) {
 
 function sendWaitingMessage() {
     var message = {
-        message: "waiting"
+        message: WAITING_MESSAGE
     };
-    debugMessage("Sending 'waiting' message:" + JSON.stringify(message));
+    debugMessage("Sending '" + WAITING_MESSAGE + "' message:" + JSON.stringify(message));
     parent.postMessage(message, queryParams.origin);
 }
 
@@ -36,7 +40,7 @@ function sendAlignFrameworksMessage(framework1Id,framework2Id) {
         framework1Id: framework1Id,
         framework2Id: framework2Id
     };
-    debugMessage("Sending 'align frameworks' message:" + JSON.stringify(message));
+    debugMessage("Sending '" + ALIGN_MESSAGE + "' message:" + JSON.stringify(message));
     parent.postMessage(message, queryParams.origin);
 }
 
@@ -89,7 +93,7 @@ else {
 //**************************************************************************************************
 $(document).ready(function () {
     if (queryParams.user == "wait") {
-        debugMessage("Recieved user='wait' parameter...");
+        debugMessage("Received user='wait' parameter...");
         showPageAsBusy("Initializing Framework Explorer...");
         sendWaitingMessage();
     }
