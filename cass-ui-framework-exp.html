@@ -272,9 +272,9 @@
         </div>
         <div class="grid-x">
             <div class="cell medium-12">
-                <button id="fwkShareSaveBtn" class="button" onclick="saveFrameworkShare();">Share</button>
+                <button id="fwkShareSaveBtn" class="button cassUiModalButton" onclick="saveFrameworkShare();">Share</button>
                 &nbsp;&nbsp;
-                <button class="button secondary" data-close>Cancel</button>
+                <button class="button secondary cassUiModalButton" data-close>Cancel</button>
             </div>
         </div>
         <div class="grid-x">
@@ -321,11 +321,44 @@
         </div>
         <div class="grid-x">
             <div class="cell medium-12">
-                <button class="button" onclick="saveFrameworkPublish();">Publish</button>
+                <button class="button cassUiModalButton" onclick="saveFrameworkPublish();">Publish</button>
                 &nbsp;&nbsp;
-                <button class="button secondary" data-close>Cancel</button>
+                <button class="button secondary cassUiModalButton" data-close>Cancel</button>
             </div>
         </div>
+        <div class="grid-x">
+            <div class="cell cassUiModalBusyCtr" style="display:none">
+                <div class="grid-container">
+                    <div class="grid-x grid-padding-x grid-padding-y">
+                        <div class="cell medium-12 text-center">
+                            <h5 class="cassUiModalBusyText"></h5>
+                            <img class="cassUiBusyImg" src="img/CASS-loading-64px.gif" />
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="cell cassUiModalErrorCtr" style="display:none">
+                <div class="grid-container">
+                    <div class="grid-x grid-padding-x grid-padding-y">
+                        <div class="cell medium-12 text-center cassUiError">
+                            <h5><i class="fa fa-exclamation-triangle"></i> <span class="cassUiModalErrorText"></span></h5>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <button class="close-button" data-close aria-label="Close reveal" type="button">
+            <span aria-hidden="true">&times;</span>
+        </button>
+    </div>
+
+    <div class="smaller reveal" id="modal-alignment-setup" data-reveal>
+        <h3><i class="fa fa-exchange" aria-hidden="true"></i> Framework Alignment</h3>
+        <p>Select frameworks to align</p>
+        <select id="fwAlmFw1"></select>
+        <select id="fwAlmFw2"></select>
+        <button class="button cassUiModalButton" onclick="prepFrameworkAlignment();">Align</button>
+        <button class="button secondary cassUiModalButton" data-close>Cancel</button>
         <div class="grid-x">
             <div class="cell cassUiModalBusyCtr" style="display:none">
                 <div class="grid-container">

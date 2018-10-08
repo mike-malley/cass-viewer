@@ -3,12 +3,41 @@
 //**************************************************************************************************
 
 //**************************************************************************************************
-// Action Exections
+// Constants
+
+const ALIGN_MESSAGE = "gotoAlign";
+const FWK_TO_FWK_ALIGN_TYPE = "fwkToFwk";
+
+//**************************************************************************************************
+// Action Executions
 //**************************************************************************************************
 
 function performInitIdentityAction(data) {
     setupIdentity(data.serverParm,data.nameParm,data.pemParm);
     loadPageContents();
+}
+
+//**************************************************************************************************
+// Message Sender
+//**************************************************************************************************
+
+function sendWaitingMessage() {
+    var message = {
+        message: "waiting"
+    };
+    debugMessage("Sending 'waiting' message:" + JSON.stringify(message));
+    parent.postMessage(message, queryParams.origin);
+}
+
+function sendAlignFrameworksMessage(framework1Id,framework2Id) {
+    var message = {
+        message: ALIGN_MESSAGE,
+        alignType: FWK_TO_FWK_ALIGN_TYPE,
+        framework1Id: framework1Id,
+        framework2Id: framework2Id
+    };
+    debugMessage("Sending 'align frameworks' message:" + JSON.stringify(message));
+    parent.postMessage(message, queryParams.origin);
 }
 
 //**************************************************************************************************
@@ -62,11 +91,7 @@ $(document).ready(function () {
     if (queryParams.user == "wait") {
         debugMessage("Recieved user='wait' parameter...");
         showPageAsBusy("Initializing Framework Explorer...");
-        var message = {
-            message: "waiting"
-        };
-        debugMessage("Responding with :" + JSON.stringify(message));
-        parent.postMessage(message, queryParams.origin);
+        sendWaitingMessage();
     }
     else {
         showPageError("Not sure what to do...");

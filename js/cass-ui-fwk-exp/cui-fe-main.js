@@ -2,9 +2,6 @@
 // CASS UI Framework Explorer Main Functions
 //**************************************************************************************************
 
-//TODO implement prepFrameworkAlignmentWithFrameworkIds
-//TODO implement openAlignmentSetupModal
-
 //TODO addChildToGraphProfileSummary construct list view for multi node competency cluster
 //TODO addChildToListView construct list view for multi node competency cluster
 //TODO showCircleGraphSidebarDetails handle multi node packets
@@ -104,16 +101,6 @@ function checkForFrameworkContentsSearchbarEnter(event) {
     }
 }
 
-function openAlignmentSetupModal() {
-    //TODO implement openAlignmentSetupModal
-    alert("TODO openAlignmentSetupModal");
-}
-
-function prepFrameworkAlignmentWithFrameworkIds(fw1Id, fw2Id, forceDataRefresh) {
-    //TODO implement prepFrameworkAlignmentWithFrameworkIds
-    alert("TODO prepFrameworkAlignmentWithFrameworkIds");
-}
-
 //**************************************************************************************************
 // Explorer Circle Graph Supporting Functions
 //**************************************************************************************************
@@ -127,6 +114,71 @@ function getExplorerCgCircleText(d) {
         return text;
     }
     return "UNDEFINED NAME";
+}
+
+//**************************************************************************************************
+// Alignment Setup Modal
+//**************************************************************************************************
+
+function isFrameworkAlignmentSetupInputValid() {
+    var fw1 = $(FWL_ALM_FW1).val();
+    var fw2 = $(FWL_ALM_FW2).val();
+    if (!fw1 || fw1.trim().length == 0 || !fw2 || fw2.trim().length == 0) {
+        showModalError(FWK_ALM_SETUP_MODAL,"You must select both frameworks");
+        return false;
+    } else if (fw1 == fw2) {
+        showModalError(FWK_ALM_SETUP_MODAL,"You must select two different frameworks");
+        return false;
+    }
+    return true;
+}
+
+function prepFrameworkAlignmentWithFrameworkIds(fw1Id, fw2Id) {
+    sendAlignFrameworksMessage(fw1Id,fw2Id);
+}
+
+function prepFrameworkAlignment() {
+    hideModalError(FWK_ALM_SETUP_MODAL);
+    if (isFrameworkAlignmentSetupInputValid()) {
+        $(FWK_ALM_SETUP_MODAL).foundation('close');
+        prepFrameworkAlignmentWithFrameworkIds($(FWL_ALM_FW1).val(), $(FWL_ALM_FW2).val());
+    }
+}
+
+function populateFrameworkAlignmentFrameworkDropdowns(ddId, startOnCurrent) {
+    var alreadySelected = false;
+    $(ddId).empty();
+    for (var i = 0; i < availableFrameworkList.length; i++) {
+        var fw = availableFrameworkList[i];
+        var fwo = $("<option />");
+        fwo.val(fw.shortId());
+        fwo.text(fw.name);
+        if (startOnCurrent) {
+            if (fw.shortId() == currentFrameworkId) {
+                fwo.attr("selected", "true");
+            }
+        }
+        else {
+            if ((fw.shortId() != currentFrameworkId) && !alreadySelected) {
+                fwo.attr("selected", "true");
+                alreadySelected = true;
+            }
+        }
+        $(ddId).append(fwo);
+    }
+}
+
+function openAlignmentSetupModal() {
+    if (!availableFrameworkList || availableFrameworkList.length < 2) {
+        showPageError("You must have access to at least 2 frameworks for alignment");
+    } else {
+        populateFrameworkAlignmentFrameworkDropdowns(FWL_ALM_FW1, true);
+        populateFrameworkAlignmentFrameworkDropdowns(FWL_ALM_FW2, false);
+        hideModalError(FWK_ALM_SETUP_MODAL);
+        hideModalBusy(FWK_ALM_SETUP_MODAL);
+        enableModalInputsAndButtons();
+        $(FWK_ALM_SETUP_MODAL).foundation('open');
+    }
 }
 
 //**************************************************************************************************
@@ -260,7 +312,11 @@ function saveFrameworkPublish() {
     hideModalError(FWK_PUBLISH_MODAL);
     if (isValidPublishDataFromFrameworkPublish()) {
         showModalBusy(FWK_PUBLISH_MODAL,"Publishing framework...");
-        setTimeout(function() {hideModalBusy(FWK_PUBLISH_MODAL);}, 3000);
+        setTimeout(function() {
+                hideModalBusy(FWK_PUBLISH_MODAL);
+                enableModalInputsAndButtons();
+            },
+        3000);
     }
 }
 
@@ -729,7 +785,7 @@ function buildRelatedFrameworksGraphProfileSummaryList() {
         if (fw) {
             var relFwLi = $("<li/>");
             var relFwLink = $("<a/>");
-            relFwLink.attr("onclick","prepFrameworkAlignmentWithFrameworkIds('" + currentFrameworkId + "','" + fw.shortId() + "',false);");
+            relFwLink.attr("onclick","prepFrameworkAlignmentWithFrameworkIds('" + currentFrameworkId + "','" + fw.shortId() + "');");
             relFwLink.html(fw.name);
             relFwLi.append(relFwLink);
             $(FWK_REL_FWK_LIST).append(relFwLi);

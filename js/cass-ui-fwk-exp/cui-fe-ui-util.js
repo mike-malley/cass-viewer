@@ -103,6 +103,11 @@ const FWK_PUBLISH_MODAL = "#modal-framework-publish";
 const FWK_PUBLISH_FWK_NAME = "#fwkPublishFwkName";
 const FWK_PUBLISH_DEST = "#fwkPublishDestination";
 
+// Framework Align Setup Modal
+const FWK_ALM_SETUP_MODAL = "#modal-alignment-setup";
+const FWL_ALM_FW1 = "#fwAlmFw1";
+const FWL_ALM_FW2 = "#fwAlmFw2";
+
 //**************************************************************************************************
 // Variables
 var currentScreen;
