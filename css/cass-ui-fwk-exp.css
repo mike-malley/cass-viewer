@@ -22,6 +22,10 @@ body {
     z-index: 500;
 }
 
+.ui-autocomplete {
+    z-index: 600;
+}
+
 ul.no-bullets {
     margin-left: 0;
 }
@@ -84,6 +88,21 @@ input:checked~.switch-paddle {
     margin-top: 3rem;
 }
 
+.cassUiModalInput {
+    width: 37rem;
+    margin-left: 1.5rem;
+}
+
+.cassUiModalTextArea {
+    height: 8rem;
+    resize: none;
+}
+
+.cassUiModalInput.invalid {
+    background-color: #F3CB7A;
+    border-color: #EA6E07;
+}
+
 /* ---- MENUS ---- */
 
 #section-sub-menu {
@@ -94,6 +113,8 @@ input:checked~.switch-paddle {
 #page-tools {
     float: right;
 }
+
+/* ---- BURGENDY Theme ---- */
 
 .burgendy {
     color: #b36a79;
@@ -133,13 +154,13 @@ body.theme-burgendy .expCircleGraph .node--leaf {
     fill: rgba(241,105,135,1);
 }
 
-body.theme-burgendy .expCircleGraph .label {
-    stroke: rgb(102, 42, 54);
-    stroke-width: 1px;
-    stroke-linecap: butt;
-    stroke-linejoin: round;
-    /*    text-shadow: 0 1px 0 #000, 1px 0 0 #000, -1px 0 0 #000, 0 -1px 0 #000, 0 2px 0 #000, 2px 0 0 #000, -2px 0 0 #000, 0 -2px 0 #000;*/
-}
+/*body.theme-burgendy .expCircleGraph .label {*/
+    /*stroke: rgb(102, 42, 54);*/
+    /*stroke-width: 1px;*/
+    /*stroke-linecap: butt;*/
+    /*stroke-linejoin: round;*/
+    /*!*    text-shadow: 0 1px 0 #000, 1px 0 0 #000, -1px 0 0 #000, 0 -1px 0 #000, 0 2px 0 #000, 2px 0 0 #000, -2px 0 0 #000, 0 -2px 0 #000;*!*/
+/*}*/
 
 body.theme-burgendy #circleFocusDetailsRelList li:hover {
     color: rgb(151, 83, 95);
@@ -151,23 +172,6 @@ body.theme-burgendy #circleFocusDetailsRelList a:hover {
 
 body.theme-burgendy #fwkShareContactsListContainer {
     background-color: #d9bcc1;
-}
-
-/* ---- BADGES/DEGREES ---- */
-
-.cass-badge {
-    font-size: smaller;
-    text-align: center;
-}
-
-.cass-badge > span {
-    display: block;
-    margin-top: 8px;
-}
-
-.icon-degree {
-    background: transparent url(../img/icon-degree.png) center no-repeat;
-    background-size: contain;
 }
 
 /* ---- LIST VIEW SCREEN ---- */
@@ -292,9 +296,8 @@ body.theme-burgendy #fwkShareContactsListContainer {
     font-size: 12px;
     text-anchor: middle;
     paint-order: stroke;
-    stroke: rgb(19, 116, 153);
-    stroke-width: 1px;
-    font-weight:600;
+    stroke: rgb(0, 0, 0);
+    stroke-width: 2px;
     stroke-linecap: butt;
     stroke-linejoin: round;
 }
@@ -325,21 +328,6 @@ body.theme-burgendy #fwkShareContactsListContainer {
 #frameworkExpHeader,
 #circleFocusSummaryName {
     cursor: pointer;
-}
-
-.cassUiModalInput {
-    width: 37rem;
-    margin-left: 1.5rem;
-}
-
-.cassUiModalTextArea {
-    height: 8rem;
-    resize: none;
-}
-
-.cassUiModalInput.invalid {
-    background-color: #F3CB7A;
-    border-color: #EA6E07;
 }
 
 #circleFocusDetailsSingleDesc {
@@ -382,11 +370,6 @@ body.theme-burgendy #fwkShareContactsListContainer {
     font-size: 1.2rem;
     text-align: right;
 }
-
-/*.gpsi {*/
-    /*color: #137499;*/
-/*}*/
-
 .gpsiRootComp {
     font-size: 1.05rem;
 }
@@ -403,7 +386,6 @@ body.theme-burgendy #fwkShareContactsListContainer {
     text-decoration: underline;
 }
 
-
 #fwkShareContactsListHdrContainer {
     margin: auto;
     margin-bottom: .1rem;
@@ -415,7 +397,6 @@ body.theme-burgendy #fwkShareContactsListContainer {
     margin: 0px;
 }
 
-#fwkAlmAutoAlmResultsList,
 #fwkShareContactsList {
     margin: .5rem 0;
 }

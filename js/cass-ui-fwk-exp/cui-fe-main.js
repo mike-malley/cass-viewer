@@ -19,7 +19,7 @@ const CREATE_IMPLIED_RELATIONS_ON_COLLAPSE = true;
 // Variables
 
 var availableFrameworkList = [];
-var frameworkdIdFrameworkMap = {};
+var frameworkIdFrameworkMap = {};
 var frameworkNameFrameworkMap = {};
 
 var currentFrameworkName;
@@ -56,13 +56,13 @@ function getFirstFrameworkIdForName(name) {
 }
 
 function getFrameworkName(frameworkId) {
-    var fw = frameworkdIdFrameworkMap[frameworkId];
+    var fw = frameworkIdFrameworkMap[frameworkId];
     if (fw) return fw.name;
     else return "Framework not found";
 }
 
 function getFrameworkDescription(frameworkId) {
-    var fw = frameworkdIdFrameworkMap[frameworkId];
+    var fw = frameworkIdFrameworkMap[frameworkId];
     if (fw) return fw.description;
     else return "";
 }
@@ -431,10 +431,10 @@ function openFrameworkOpenModal() {
 
 function buildOpenFrameworkSearchAutoCompleteData() {
     var data = [];
-    for (var frameworkId in frameworkdIdFrameworkMap) {
-        if (frameworkdIdFrameworkMap.hasOwnProperty(frameworkId)) {
+    for (var frameworkId in frameworkIdFrameworkMap) {
+        if (frameworkIdFrameworkMap.hasOwnProperty(frameworkId)) {
             data.push({
-                label:frameworkdIdFrameworkMap[frameworkId].name,
+                label:frameworkIdFrameworkMap[frameworkId].name,
                 value:frameworkId
             });
         }
@@ -781,7 +781,7 @@ function addFrameworkCompetenciesToGraphProfileSummary() {
 function buildRelatedFrameworksGraphProfileSummaryList() {
     $(FWK_REL_FWK_LIST).empty();
     for (var i=0;i<currentFrameworkRelatedFrameworks.length;i++) {
-        var fw = frameworkdIdFrameworkMap[currentFrameworkRelatedFrameworks[i]];
+        var fw = frameworkIdFrameworkMap[currentFrameworkRelatedFrameworks[i]];
         if (fw) {
             var relFwLi = $("<li/>");
             var relFwLink = $("<a/>");
@@ -922,14 +922,14 @@ function handleFetchFrameworkFailure(err) {
 
 function findCurrentFrameworkRelatedFrameworks() {
     currentFrameworkRelatedFrameworks = [];
-    var curFw = frameworkdIdFrameworkMap[currentFrameworkId];
+    var curFw = frameworkIdFrameworkMap[currentFrameworkId];
     if (curFw){
         var curFwRels =  curFw.relation;
         if (curFwRels) {
             for (var i=0;i<curFwRels.length;i++) {
-                for (var frameworkId in frameworkdIdFrameworkMap) {
-                    if (frameworkdIdFrameworkMap.hasOwnProperty(frameworkId) && frameworkId != currentFrameworkId && !currentFrameworkRelatedFrameworks.includes(frameworkId)) {
-                        var lkFwRels = frameworkdIdFrameworkMap[frameworkId].relation;
+                for (var frameworkId in frameworkIdFrameworkMap) {
+                    if (frameworkIdFrameworkMap.hasOwnProperty(frameworkId) && frameworkId != currentFrameworkId && !currentFrameworkRelatedFrameworks.includes(frameworkId)) {
+                        var lkFwRels = frameworkIdFrameworkMap[frameworkId].relation;
                         if(lkFwRels && lkFwRels.includes(curFwRels[i])) {
                             currentFrameworkRelatedFrameworks.push(frameworkId);
                         }
@@ -941,8 +941,6 @@ function findCurrentFrameworkRelatedFrameworks() {
 }
 
 function loadAndOpenFramework(frameworkId) {
-    //showAllCassUiPageMenus();
-    showFrameworkExplorerMenu();
     disableViewToggleButtons();
     hideFrameworkExpTools();
     hideFrameworkContentsSearchBar();
@@ -975,11 +973,11 @@ function createSortedAvailableFrameworkList(ownedFrameworkList,unownedFrameworkL
 function buildFrameworkLists(arrayOfEcFrameworks) {
     var ownedFrameworkList = [];
     var unownedFrameworkList = [];
-    frameworkdIdFrameworkMap = {};
+    frameworkIdFrameworkMap = {};
     for (var i=0;i<arrayOfEcFrameworks.length;i++) {
         var cecf = arrayOfEcFrameworks[i];
         if (cecf.name && cecf.name.trim().length > 0) {
-            frameworkdIdFrameworkMap[cecf.shortId()] = cecf;
+            frameworkIdFrameworkMap[cecf.shortId()] = cecf;
             if (!frameworkNameFrameworkMap[cecf.name.trim()]) {
                 frameworkNameFrameworkMap[cecf.name.trim()] = [];
             }
@@ -1009,8 +1007,6 @@ function handleFetchFrameworksFromRepositoryFailure(err) {
 }
 
 function fetchAvailableFrameworks() {
-    showFrameworkExplorerMenu();
-    //showAllCassUiPageMenus();
     disableViewToggleButtons();
     hideFrameworkExpTools();
     hideFrameworkContentsSearchBar();

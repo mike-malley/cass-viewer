@@ -2,9 +2,6 @@
 // CASS UI Framework Explorer UI Utility Functions
 //**************************************************************************************************
 
-//TODO implement goToDisplayRoot
-//TODO clearOpenFrameworkSearchBar verify this
-
 //**************************************************************************************************
 // Constants
 
@@ -15,8 +12,10 @@ const DEFAULT_FRAMEWORK_DESCRIPTION = "The following related elements were found
 
 const LIST_VIEW_SCROLL_ITEM_OFFSET = 220;
 
-const GRAPH_SCREEN = "#graph-screen";
-const LIST_SCREEN = "#list-screen";
+const GRAPH_SCREEN_SIMPLE = "graph-screen";
+const GRAPH_SCREEN = "#" + GRAPH_SCREEN_SIMPLE;
+const LIST_SCREEN_SIMPLE = "list-screen";
+const LIST_SCREEN = "#" + LIST_SCREEN_SIMPLE;
 
 // Color Themes
 const FRAMEWORK_EXP_THEME_CLASS = "theme-burgendy";
@@ -40,7 +39,6 @@ const CASSUI_MODAL_ERROR_TXT = ".cassUiModalErrorText";
 const SHOW_GRAPH_VIEW_BTN = "#showGraphViewBtn";
 const SHOW_LIST_VIEW_BTN = "#showListViewBtn";
 
-const FRAMEWORK_EXP_MENU = "#frameworkExplorerMenu";
 const FRAMEWORK_EXP_NAME = "#frameworkExplorerName";
 
 const FWK_CONT_SRCH_CTR = "#frameworkContentsSearchContainer";
@@ -113,7 +111,7 @@ const FWL_ALM_FW2 = "#fwAlmFw2";
 var currentScreen;
 
 //**************************************************************************************************
-// Utility Functions
+// General UI Utility Functions
 //**************************************************************************************************
 
 queryParams = function () {
@@ -132,30 +130,6 @@ queryParams = function () {
 };
 
 queryParams = queryParams();
-
-function showOnlyOpenFrameworkTool() {
-    $(FWK_EXP_FULL_TOOLSET).hide();
-    $(FWK_EXP_OPEN_ONLY_TOOLSET).show();
-    $(FWK_EXP_PAGE_TOOLS).show();
-}
-
-function hideFrameworkExpTools() {
-    $(FWK_EXP_PAGE_TOOLS).hide();
-}
-
-function setUpAndShowFrameworkExpTools() {
-    if (currentFrameworkFull.hasOwner(loggedInPk)) {
-        $(FWK_EXP_SHARE_TOOL).show();
-        $(FWK_EXP_PUB_TOOL).show();
-    }
-    else {
-        $(FWK_EXP_SHARE_TOOL).hide();
-        $(FWK_EXP_PUB_TOOL).hide();
-    }
-    $(FWK_EXP_OPEN_ONLY_TOOLSET).hide();
-    $(FWK_EXP_FULL_TOOLSET).show();
-    $(FWK_EXP_PAGE_TOOLS).show();
-}
 
 function debugMessage(msg) {
     if (DEBUG_CONSOLE) console.log(msg);
@@ -180,18 +154,6 @@ function hidePageMainContentsContainer() {
     $(CASSUI_MAIN_CONTENTS_CTR).hide();
 }
 
-function showListViewMainContentsScreen() {
-    showPageMainContentsContainer();
-    showScreen("list-screen");
-    currentScreen = "list-screen";
-}
-
-function showGraphViewMainContentsScreen() {
-    showPageMainContentsContainer();
-    showScreen("graph-screen");
-    $("html, body").animate({ scrollTop: 0 }, 500);
-    currentScreen = "graph-screen";
-}
 
 function showPageAsBusy(text) {
     $(CASSUI_MAIN_ERR_CTR).hide();
@@ -211,73 +173,8 @@ function showPageError(text) {
     showOnlyOpenFrameworkTool();
 }
 
-function showCircleSidebarDetails() {
-    $(CIR_FCS_DTL_CTR).removeClass("hide");
-}
-
-function hideCirlceSidebarDetails() {
-    $(CIR_FCS_DTL_CTR).addClass("hide");
-}
-
-function showFrameworkExplorerMenu() {
-    $(FRAMEWORK_EXP_MENU).show();
-}
-
-function disableViewToggleButtons() {
-    $(SHOW_GRAPH_VIEW_BTN).attr("disabled", "true");
-    $(SHOW_LIST_VIEW_BTN).attr("disabled", "true");
-}
-
-function enableViewToggleButtons() {
-    $(SHOW_GRAPH_VIEW_BTN).removeAttr("disabled");
-    $(SHOW_LIST_VIEW_BTN).removeAttr("disabled");
-}
-
-function hideFrameworkContentsSearchBar() {
-    $(FWK_CONT_SRCH_CTR).hide();
-}
-
-function showFrameworkContentsSearchBar() {
-    $(FWK_CONT_SRCH_CTR).show();
-}
-
-function clearFrameworkContentsSearchBar() {
-    $(FWK_CONT_SRCH_INPT).val("");
-}
-
-function clearOpenFrameworkSearchBar() {
-    //TODO clearOpenFrameworkSearchBar verify this
-    $(OPEN_FWK_SRCH_INPT).val("");
-}
-
-function clearAllSearchBars() {
-    clearOpenFrameworkSearchBar();
-    clearFrameworkContentsSearchBar();
-}
-
 function setPageColorTheme() {
     $('body').addClass(FRAMEWORK_EXP_THEME_CLASS);
-}
-
-function setPageFrameworkExplorerName(name) {
-    $(FRAMEWORK_EXP_NAME).html(name);
-}
-
-function showNoFrameworksAvailableWarning() {
-    $(CASSUI_MAIN_BUSY_CTR).hide();
-    $(CASSUI_MAIN_ERR_CTR).hide();
-    $(CASSUI_HIGH_LVL_WARNING).hide();
-    setPageFrameworkExplorerName("No frameworks available");
-    $(NO_FRAMEWORKS_AVAILABLE_CTR).show();
-    showOnlyOpenFrameworkTool();
-}
-
-function showFrameworkHasCircularDependencyWarning() {
-    $(CASSUI_MAIN_BUSY_CTR).hide();
-    $(CASSUI_MAIN_ERR_CTR).hide();
-    $(CASSUI_HIGH_LVL_WARNING).hide();
-    $(CIRC_DEPEND_WARNING_CTR).show();
-    showOnlyOpenFrameworkTool();
 }
 
 function disableModalInputsAndButtons() {
@@ -317,13 +214,6 @@ function showModalInputAsInvalid(fieldId) {
     $(fieldId).addClass("invalid");
 }
 
-function goToDisplayRoot() {
-    if (hasFinishedLoading) {
-        //Node ID for a framework is its name..since that is the only node with a name ID, it should be fine...
-        zoomExpCgByD3NodeId(currentFrameworkName, true);
-    }
-}
-
 function generateAnchorLink(href, text, target) {
     return "<a href=\"" + href + "\" target=\"" + target + "\">" + escapeSingleQuote(text) + "</a>";
 }
@@ -347,6 +237,114 @@ if ( typeof String.prototype.endsWith != 'function' ) {
         return str.length > 0 && this.substring( this.length - str.length, this.length ) === str;
     }
 };
+
+//**************************************************************************************************
+// Framework Explorer Page UI Functions
+//**************************************************************************************************
+
+function showOnlyOpenFrameworkTool() {
+    $(FWK_EXP_FULL_TOOLSET).hide();
+    $(FWK_EXP_OPEN_ONLY_TOOLSET).show();
+    $(FWK_EXP_PAGE_TOOLS).show();
+}
+
+function hideFrameworkExpTools() {
+    $(FWK_EXP_PAGE_TOOLS).hide();
+}
+
+function setUpAndShowFrameworkExpTools() {
+    if (currentFrameworkFull.hasOwner(loggedInPk)) {
+        $(FWK_EXP_SHARE_TOOL).show();
+        $(FWK_EXP_PUB_TOOL).show();
+    }
+    else {
+        $(FWK_EXP_SHARE_TOOL).hide();
+        $(FWK_EXP_PUB_TOOL).hide();
+    }
+    $(FWK_EXP_OPEN_ONLY_TOOLSET).hide();
+    $(FWK_EXP_FULL_TOOLSET).show();
+    $(FWK_EXP_PAGE_TOOLS).show();
+}
+
+function showListViewMainContentsScreen() {
+    showPageMainContentsContainer();
+    showScreen(LIST_SCREEN_SIMPLE);
+    currentScreen = LIST_SCREEN_SIMPLE;
+}
+
+function showGraphViewMainContentsScreen() {
+    showPageMainContentsContainer();
+    showScreen(GRAPH_SCREEN_SIMPLE);
+    $("html, body").animate({ scrollTop: 0 }, 500);
+    currentScreen = GRAPH_SCREEN_SIMPLE;
+}
+
+function showCircleSidebarDetails() {
+    $(CIR_FCS_DTL_CTR).removeClass("hide");
+}
+
+function hideCirlceSidebarDetails() {
+    $(CIR_FCS_DTL_CTR).addClass("hide");
+}
+
+function disableViewToggleButtons() {
+    $(SHOW_GRAPH_VIEW_BTN).attr("disabled", "true");
+    $(SHOW_LIST_VIEW_BTN).attr("disabled", "true");
+}
+
+function enableViewToggleButtons() {
+    $(SHOW_GRAPH_VIEW_BTN).removeAttr("disabled");
+    $(SHOW_LIST_VIEW_BTN).removeAttr("disabled");
+}
+
+function hideFrameworkContentsSearchBar() {
+    $(FWK_CONT_SRCH_CTR).hide();
+}
+
+function showFrameworkContentsSearchBar() {
+    $(FWK_CONT_SRCH_CTR).show();
+}
+
+function clearFrameworkContentsSearchBar() {
+    $(FWK_CONT_SRCH_INPT).val("");
+}
+
+function clearOpenFrameworkSearchBar() {
+    $(OPEN_FWK_SRCH_INPT).val("");
+}
+
+function clearAllSearchBars() {
+    clearOpenFrameworkSearchBar();
+    clearFrameworkContentsSearchBar();
+}
+
+function setPageFrameworkExplorerName(name) {
+    $(FRAMEWORK_EXP_NAME).html(name);
+}
+
+function showNoFrameworksAvailableWarning() {
+    $(CASSUI_MAIN_BUSY_CTR).hide();
+    $(CASSUI_MAIN_ERR_CTR).hide();
+    $(CASSUI_HIGH_LVL_WARNING).hide();
+    setPageFrameworkExplorerName("No frameworks available");
+    $(NO_FRAMEWORKS_AVAILABLE_CTR).show();
+    showOnlyOpenFrameworkTool();
+}
+
+function showFrameworkHasCircularDependencyWarning() {
+    $(CASSUI_MAIN_BUSY_CTR).hide();
+    $(CASSUI_MAIN_ERR_CTR).hide();
+    $(CASSUI_HIGH_LVL_WARNING).hide();
+    $(CIRC_DEPEND_WARNING_CTR).show();
+    showOnlyOpenFrameworkTool();
+}
+
+function goToDisplayRoot() {
+    if (hasFinishedLoading) {
+        //Node ID for a framework is its name..since that is the only node with a name ID, it should be fine...
+        zoomExpCgByD3NodeId(currentFrameworkName, true);
+    }
+}
 
 //**************************************************************************************************
 // List Screen Utility Functions
