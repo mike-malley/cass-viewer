@@ -12,6 +12,7 @@ const DEFAULT_FRAMEWORK_DESCRIPTION = "The following related elements were found
 
 const LIST_VIEW_SCROLL_ITEM_OFFSET = 220;
 
+// Screens
 const GRAPH_SCREEN_SIMPLE = "graph-screen";
 const GRAPH_SCREEN = "#" + GRAPH_SCREEN_SIMPLE;
 const LIST_SCREEN_SIMPLE = "list-screen";
@@ -173,10 +174,6 @@ function showPageError(text) {
     showOnlyOpenFrameworkTool();
 }
 
-function setPageColorTheme() {
-    $('body').addClass(FRAMEWORK_EXP_THEME_CLASS);
-}
-
 function disableModalInputsAndButtons() {
     $(CASSUI_MODAL_INPUT).attr("disabled", "true");
     $(CASSUI_MODAL_BTN).attr("disabled", "true");
@@ -241,6 +238,10 @@ if ( typeof String.prototype.endsWith != 'function' ) {
 //**************************************************************************************************
 // Framework Explorer Page UI Functions
 //**************************************************************************************************
+
+function setPageColorTheme() {
+    $('body').addClass(FRAMEWORK_EXP_THEME_CLASS);
+}
 
 function showOnlyOpenFrameworkTool() {
     $(FWK_EXP_FULL_TOOLSET).hide();

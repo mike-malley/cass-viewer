@@ -41,6 +41,8 @@ var competencyIdToSave;
 
 var hasFinishedLoading;
 
+var frameworkToOpen;
+
 //**************************************************************************************************
 // Utility Functions
 //**************************************************************************************************
@@ -970,6 +972,11 @@ function createSortedAvailableFrameworkList(ownedFrameworkList,unownedFrameworkL
     }
 }
 
+function getInitialFrameworkToExplore() {
+    if (frameworkToOpen && frameworkToOpen != "")  return frameworkToOpen;
+    else return availableFrameworkList[0].shortId();
+}
+
 function buildFrameworkLists(arrayOfEcFrameworks) {
     var ownedFrameworkList = [];
     var unownedFrameworkList = [];
@@ -993,7 +1000,7 @@ function buildFrameworkLists(arrayOfEcFrameworks) {
     }
     else {
         createSortedAvailableFrameworkList(ownedFrameworkList,unownedFrameworkList);
-        loadAndOpenFramework(availableFrameworkList[0].shortId());
+        loadAndOpenFramework(getInitialFrameworkToExplore());
     }
 }
 
@@ -1021,7 +1028,8 @@ function fetchAvailableFrameworks() {
 // Page Load
 //**************************************************************************************************
 
+setPageColorTheme();
+
 function loadPageContents() {
-    setPageColorTheme();
     fetchAvailableFrameworks();
 }

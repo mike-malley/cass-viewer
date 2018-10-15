@@ -92,6 +92,10 @@ else {
 // Initial Page Load
 //**************************************************************************************************
 $(document).ready(function () {
+    if (queryParams.frameworkId && queryParams.frameworkId != "") {
+        frameworkToOpen = queryParams.frameworkId;
+    }
+    else frameworkToOpen = null;
     if (queryParams.user == "wait") {
         debugMessage("Received user='wait' parameter...");
         showPageAsBusy("Initializing Framework Explorer...");
