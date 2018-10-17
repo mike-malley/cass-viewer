@@ -51,7 +51,7 @@ function sendAlignFrameworksMessage(framework1Id,framework2Id) {
 function performAction(action,data) {
     debugMessage("iframe-comms: performAction: " + action);
     switch (action) {
-        case "initIdentity":
+        case INIT_IDENTITY_ACTION:
             performInitIdentityAction(data);
             break;
         default:
