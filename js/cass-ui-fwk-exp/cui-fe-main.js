@@ -47,6 +47,8 @@ var frameworkToOpen;
 // Utility Functions
 //**************************************************************************************************
 
+EcRepository.caching = true;
+
 function getFirstFrameworkIdForName(name) {
     if (name) {
         var n = name.trim();
