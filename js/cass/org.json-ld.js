@@ -18,7 +18,7 @@ function(context, type) {
     this.setContextAndType(context, type);
 };
 EcLinkedData = stjs.extend(EcLinkedData, null, [], function(constructor, prototype) {
-    constructor.atProperties = ["id", "type", "schema", "context", "signature", "owner", "reader", "encryptedType"];
+    constructor.atProperties = ["id", "type", "schema", "context", "signature", "graph", "owner", "reader", "encryptedType"];
     /**
      *  JSON-LD @type field.
      * 
@@ -118,8 +118,9 @@ EcLinkedData = stjs.extend(EcLinkedData, null, [], function(constructor, prototy
         var keys = new Array();
         var me = (o);
         for (var key in me) {
-            if (EcLinkedData.isAtProperty(key)) 
-                key = "@" + key;
+            if (me["type"] != null) 
+                if (EcLinkedData.isAtProperty(key)) 
+                    key = "@" + key;
             keys.push(key);
         }
         keys.sort(function(a, b) {
@@ -182,9 +183,20 @@ EcLinkedData = stjs.extend(EcLinkedData, null, [], function(constructor, prototy
     prototype.getFullType = function() {
         if (this.context == null) 
             return this.type;
-        if (this.type.contains("http")) 
+        if (this.type.indexOf("http") != -1) 
             return this.type;
         var computedType = this.context;
+        if (EcObject.isObject(this.context)) {
+            var typeParts = this.type.split(":");
+            if (typeParts.length == 2) {
+                computedType = (this.context)[typeParts[0]];
+                if (!computedType.endsWith("/")) 
+                    computedType += "/";
+                computedType += typeParts[1];
+                return computedType;
+            } else if ((this.context)["@vocab"] != null) 
+                computedType = (this.context)["@vocab"];
+        }
         if (!computedType.endsWith("/")) 
             computedType += "/";
         computedType += this.type;
@@ -208,9 +220,41 @@ EcLinkedData = stjs.extend(EcLinkedData, null, [], function(constructor, prototy
         }
         var you = (that);
         for (var key in you) {
-            if ((typeof you[key]) != "function") 
-                me[key.replace("@", "")] = you[key];
+            if ((typeof you[key]) != "function") {
+                if (you["@type"] != null) 
+                    me[key.replace("@", "")] = you[key];
+                 else 
+                    me[key] = you[key];
+            }
         }
+        var stripNamespace = null;
+        var newContext = null;
+        if (this.type != null && this.context != null && EcObject.isObject(this.context)) {
+            var typeParts = this.type.split(":");
+            if (typeParts.length == 2) {
+                newContext = (this.context)[typeParts[0]];
+                stripNamespace = typeParts[0];
+                if (!newContext.endsWith("/")) 
+                    newContext += "/";
+            } else if ((this.context)["@vocab"] != null) 
+                newContext = (this.context)["@vocab"];
+        }
+        if (stripNamespace != null) 
+            for (var key in me) {
+                if ((typeof me[key]) != "function") {
+                    if (key.startsWith(stripNamespace + ":")) {
+                        if (EcArray.isArray(me[key])) {
+                            (me)[key.replace(stripNamespace + ":", "")] = JSON.parse(JSON.stringify(me[key]).replaceAll(stripNamespace + ":", ""));
+                        } else if (EcObject.isObject(me[key])) {
+                            (me)[key.replace(stripNamespace + ":", "")] = JSON.parse(JSON.stringify(me[key]).replaceAll(stripNamespace + ":", ""));
+                        } else 
+                            (me)[key.replace(stripNamespace + ":", "")] = me[key];
+                        delete me[key];
+                    }
+                }
+            }
+        if (newContext != null) 
+            this.context = newContext;
         this.upgrade();
         if (!this.isAny(this.getTypes())) 
              throw new RuntimeException("Incompatible type: " + this.getFullType());
@@ -231,13 +275,24 @@ EcLinkedData = stjs.extend(EcLinkedData, null, [], function(constructor, prototy
      */
     prototype.deAtify = function() {
         var me = (this);
+        var typeFound = false;
+        if (me["@type"] != null) 
+            typeFound = true;
         for (var key in me) {
             if (me[key] == null) {
-                var value = me[key];
-                if (value != null) 
-                    if (stjs.isInstanceOf(value.constructor, EcLinkedData)) 
-                        value = (value).deAtify();
-                me[key.replace("@", "")] = value;
+                if (typeFound) {
+                    var value = me[key];
+                    if (value != null) 
+                        if (stjs.isInstanceOf(value.constructor, EcLinkedData)) 
+                            value = (value).deAtify();
+                    me[key.replace("@", "")] = value;
+                } else {
+                    var value = me[key];
+                    if (value != null) 
+                        if (stjs.isInstanceOf(value.constructor, EcLinkedData)) 
+                            value = (value).deAtify();
+                    me[key] = value;
+                }
             }
         }
         return this;
@@ -251,9 +306,25 @@ EcLinkedData = stjs.extend(EcLinkedData, null, [], function(constructor, prototy
     prototype.getTypes = function() {
         var a = new Array();
         if (this.context != null && this.type != null) {
-            var context = (!this.context.endsWith("/") ? this.context + "/" : this.context);
-            a.push(context + this.type);
+            if (!EcObject.isObject(this.context)) {
+                var context = (!this.context.endsWith("/") ? this.context + "/" : this.context);
+                if (this.type.indexOf(context) == 0) 
+                    a.push(this.type);
+                 else 
+                    a.push(context + this.type);
+            }
         }
         return a;
+    };
+    prototype.compact = function(remoteContextUrl, success, failure) {
+        var me = this;
+        jsonld.compact(this.toJson(), remoteContextUrl, new Object(), function(err, compacted, context) {
+            if (err != null) {
+                failure(err);
+                return;
+            }
+            me.copyFrom(compacted);
+            success(this);
+        });
     };
 }, {atProperties: {name: "Array", arguments: [null]}}, {});

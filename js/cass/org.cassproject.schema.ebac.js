@@ -94,13 +94,13 @@ EbacCredentialRequest = stjs.extend(EbacCredentialRequest, EcLinkedData, [], fun
     prototype.password = null;
     prototype.upgrade = function() {
         EcLinkedData.prototype.upgrade.call(this);
-        if (EbacCredentialRequest.TYPE_0_1.equals(this.type)) {
+        if (EbacCredentialRequest.TYPE_0_1 == this.type) {
             var me = (this);
             if (me["@context"] == null && me["@schema"] != null) 
                 me["@context"] = me["@schema"];
             this.setContextAndType(Ebac.context_0_2, EbacCredentialRequest.TYPE_0_2);
         }
-        if (EbacCredentialRequest.TYPE_0_2.equals(this.getFullType())) {
+        if (EbacCredentialRequest.TYPE_0_2 == this.getFullType()) {
             this.setContextAndType(Ebac.context_0_3, EbacCredentialRequest.TYPE_0_3);
         }
     };
@@ -388,7 +388,7 @@ EbacSignature = stjs.extend(EbacSignature, EcLinkedData, [], function(constructo
      *  @property expiry
      *  @type long
      */
-    prototype.expiry = 0.0;
+    prototype.expiry = null;
     /**
      *  The signature of this object, having signed the object, having been
      *  encoded in JSON with no space or tabs in ASCII sort order, having no
@@ -487,13 +487,13 @@ EbacEncryptedValue = stjs.extend(EbacEncryptedValue, EcRemoteLinkedData, [], fun
     };
     prototype.upgrade = function() {
         EcLinkedData.prototype.upgrade.call(this);
-        if (EbacEncryptedValue.TYPE_0_1.equals(this.type)) {
+        if (EbacEncryptedValue.TYPE_0_1 == this.type) {
             var me = (this);
             if (me["@context"] == null && me["@schema"] != null) 
                 me["@context"] = me["@schema"];
             this.setContextAndType(Ebac.context_0_2, EbacEncryptedValue.TYPE_0_2);
         }
-        if (EbacEncryptedValue.TYPE_0_2.equals(this.getFullType())) {
+        if (EbacEncryptedValue.TYPE_0_2 == this.getFullType()) {
             this.setContextAndType(Ebac.context_0_3, EbacEncryptedValue.TYPE_0_3);
         }
     };

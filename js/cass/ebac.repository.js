@@ -14,6 +14,8 @@ var EcEncryptedValue = function() {
 EcEncryptedValue = stjs.extend(EcEncryptedValue, EbacEncryptedValue, [], function(constructor, prototype) {
     constructor.encryptOnSaveMap = null;
     constructor.revive = function(partiallyRehydratedObject) {
+        if (partiallyRehydratedObject == null) 
+            return null;
         var v = new EcEncryptedValue();
         v.copyFrom(partiallyRehydratedObject);
         return v;
@@ -378,6 +380,19 @@ EcEncryptedValue = stjs.extend(EcEncryptedValue, EbacEncryptedValue, [], functio
         return null;
     };
     /**
+     *  Decrypts an encrypted value into a string using an alternative secret.
+     * 
+     *  @return {String} Decrypted string value
+     *  @memberOf EcEncryptedValue
+     *  @method decryptIntoString
+     */
+    prototype.decryptIntoStringUsingSecret = function(decryptSecret) {
+        if (decryptSecret != null) {
+            return EcAesCtr.decrypt(this.payload, decryptSecret.secret, decryptSecret.iv);
+        }
+        return null;
+    };
+    /**
      *  Asynchronously decrypts an encrypted value into a string
      * 
      *  @param {Callback1<String>} success Callback triggered after successfully
@@ -398,6 +413,26 @@ EcEncryptedValue = stjs.extend(EcEncryptedValue, EbacEncryptedValue, [], functio
                 EcAesCtrAsync.decrypt(me.payload, decryptSecret.secret, decryptSecret.iv, success, failure);
             }
         }, failure);
+    };
+    /**
+     *  Asynchronously decrypts an encrypted value into a string
+     * 
+     *  @param {Callback1<String>} success Callback triggered after successfully
+     *                             decrypted, returns decrypted string
+     *  @param {Callback1<String>} failure Callback triggered if error during
+     *                             decryption
+     *  @memberOf EcEncryptedValue
+     *  @method decryptIntoStringAsync
+     */
+    prototype.decryptIntoStringUsingSecretAsync = function(decryptSecret, success, failure) {
+        var me = this;
+        if (decryptSecret != null) {
+            if (me.context == Ebac.context_0_2 || me.context == Ebac.context_0_3) {
+                if (base64.decode(decryptSecret.iv).byteLength == 32) 
+                    decryptSecret.iv = base64.encode(base64.decode(decryptSecret.iv).slice(0, 16));
+            }
+            EcAesCtrAsync.decrypt(me.payload, decryptSecret.secret, decryptSecret.iv, success, failure);
+        }
     };
     /**
      *  Asynchronously decrypts an encrypted value into a string with an IV and
@@ -428,13 +463,15 @@ EcEncryptedValue = stjs.extend(EcEncryptedValue, EbacEncryptedValue, [], functio
      *  @method decryptSecret
      */
     prototype.decryptSecret = function() {
+        var candidateIndex = 0;
         if (this.owner != null) {
             for (var i = 0; i < this.owner.length; i++) {
                 var decryptionKey = EcIdentityManager.getPpk(EcPk.fromPem(this.owner[i]));
                 if (decryptionKey == null) {
+                    candidateIndex++;
                     continue;
                 }
-                var decrypted = this.decryptSecretByKey(decryptionKey);
+                var decrypted = this.decryptSecretByKey(decryptionKey, candidateIndex);
                 if (decrypted != null) {
                     return decrypted;
                 }
@@ -444,9 +481,10 @@ EcEncryptedValue = stjs.extend(EcEncryptedValue, EbacEncryptedValue, [], functio
             for (var i = 0; i < this.reader.length; i++) {
                 var decryptionKey = EcIdentityManager.getPpk(EcPk.fromPem(this.reader[i]));
                 if (decryptionKey == null) {
+                    candidateIndex++;
                     continue;
                 }
-                var decrypted = this.decryptSecretByKey(decryptionKey);
+                var decrypted = this.decryptSecretByKey(decryptionKey, candidateIndex);
                 if (decrypted != null) {
                     return decrypted;
                 }
@@ -454,9 +492,37 @@ EcEncryptedValue = stjs.extend(EcEncryptedValue, EbacEncryptedValue, [], functio
         }
         for (var i = 0; i < EcIdentityManager.ids.length; i++) {
             var decryptionKey = EcIdentityManager.ids[i].ppk;
-            var decrypted = this.decryptSecretByKey(decryptionKey);
+            var decrypted = this.decryptSecretByKey(decryptionKey, -1);
             if (decrypted != null) {
                 return decrypted;
+            }
+        }
+        return null;
+    };
+    /**
+     *  Attempts to decrypt secret with a specific key
+     * 
+     *  @param {EcPpk} decryptionKey Key to attempt secret decryption
+     *  @return {EbacEncryptedSecret} Decrypted Secret
+     *  @memberOf EcEncryptedValue
+     *  @method decryptSecretByKey
+     */
+    prototype.decryptSecretByKey = function(decryptionKey, tryThisIndexFirst) {
+        var encryptedSecret = null;
+        if (this.secret != null) {
+            if (tryThisIndexFirst >= 0) 
+                try {
+                    encryptedSecret = this.tryDecryptSecretByKeyAndIndex(decryptionKey, tryThisIndexFirst);
+                    if (encryptedSecret != null) 
+                        return encryptedSecret;
+                }catch (ex) {}
+            for (var j = 0; j < this.secret.length; j++) {
+                if (tryThisIndexFirst < 0 || j != tryThisIndexFirst) 
+                    try {
+                        encryptedSecret = this.tryDecryptSecretByKeyAndIndex(decryptionKey, j);
+                    }catch (ex) {}
+                if (encryptedSecret != null) 
+                    return encryptedSecret;
             }
         }
         return null;
@@ -474,12 +540,14 @@ EcEncryptedValue = stjs.extend(EcEncryptedValue, EbacEncryptedValue, [], functio
      */
     prototype.decryptSecretAsync = function(success, failure) {
         var ppks = new Array();
+        var estimatedIndices = new Array();
         if (this.owner != null) {
             for (var i = 0; i < this.owner.length; i++) {
                 var decryptionKey = EcIdentityManager.getPpk(EcPk.fromPem(this.owner[i]));
                 if (decryptionKey != null) {
                     if (!decryptionKey.inArray(ppks)) {
                         ppks.push(decryptionKey);
+                        estimatedIndices.push(i);
                     }
                 }
             }
@@ -490,22 +558,19 @@ EcEncryptedValue = stjs.extend(EcEncryptedValue, EbacEncryptedValue, [], functio
                 if (decryptionKey != null) {
                     if (!decryptionKey.inArray(ppks)) {
                         ppks.push(decryptionKey);
+                        estimatedIndices.push(i + this.owner.length);
                     }
-                }
-            }
-        }
-        for (var i = 0; i < EcIdentityManager.ids.length; i++) {
-            var decryptionKey = EcIdentityManager.ids[i].ppk;
-            if (decryptionKey != null) {
-                if (!decryptionKey.inArray(ppks)) {
-                    ppks.push(decryptionKey);
                 }
             }
         }
         var me = this;
         var helper = new EcAsyncHelper();
         helper.each(ppks, function(decryptionKey, countdown) {
-            me.decryptSecretByKeyAsync(decryptionKey, function(p1) {
+            var estimatedIndex = -1;
+            for (var i = 0; i < ppks.length; i++) 
+                if (ppks[i].equals(decryptionKey)) 
+                    estimatedIndex = estimatedIndices[i];
+            me.decryptSecretByKeyAsync(decryptionKey, estimatedIndex, function(p1) {
                 if (helper.counter == -1) {
                     return;
                 }
@@ -518,29 +583,14 @@ EcEncryptedValue = stjs.extend(EcEncryptedValue, EbacEncryptedValue, [], functio
             failure("Could not decrypt secret.");
         });
     };
-    /**
-     *  Attempts to decrypt secret with a specific key
-     * 
-     *  @param {EcPpk} decryptionKey Key to attempt secret decryption
-     *  @return {EbacEncryptedSecret} Decrypted Secret
-     *  @memberOf EcEncryptedValue
-     *  @method decryptSecretByKey
-     */
-    prototype.decryptSecretByKey = function(decryptionKey) {
-        var encryptedSecret = null;
-        if (this.secret != null) {
-            for (var j = 0; j < this.secret.length; j++) {
-                try {
-                    var decryptedSecret = null;
-                    decryptedSecret = EcRsaOaep.decrypt(decryptionKey, this.secret[j]);
-                    if (!EcLinkedData.isProbablyJson(decryptedSecret)) {
-                        continue;
-                    }
-                    encryptedSecret = EbacEncryptedSecret.fromEncryptableJson(JSON.parse(decryptedSecret));
-                }catch (ex) {}
-            }
+    prototype.tryDecryptSecretByKeyAndIndex = function(decryptionKey, j) {
+        var decryptedSecret = null;
+        decryptedSecret = EcRsaOaep.decrypt(decryptionKey, this.secret[j]);
+        if (EcLinkedData.isProbablyJson(decryptedSecret)) {
+            var encryptedSecret = EbacEncryptedSecret.fromEncryptableJson(JSON.parse(decryptedSecret));
+            return encryptedSecret;
         }
-        return encryptedSecret;
+        return null;
     };
     /**
      *  Asynchronously attempts to decrypt secret with a specific key
@@ -553,29 +603,45 @@ EcEncryptedValue = stjs.extend(EcEncryptedValue, EbacEncryptedValue, [], functio
      *  @memberOf EcEncryptedValue
      *  @method decryptSecretByKeyAsync
      */
-    prototype.decryptSecretByKeyAsync = function(decryptionKey, success, failure) {
+    prototype.decryptSecretByKeyAsync = function(decryptionKey, estimatedIndex, success, failure) {
         var encryptedSecret = null;
+        var me = this;
         if (this.secret != null) {
-            var helper = new EcAsyncHelper();
-            helper.each(this.secret, function(decryptionSecret, decrement) {
-                EcRsaOaepAsync.decrypt(decryptionKey, decryptionSecret, function(decryptedSecret) {
-                    if (helper.counter == -1) {
-                        return;
-                    }
+            if (estimatedIndex < 0) {
+                this.decryptSecretsByKeyAsync(decryptionKey, success, failure);
+            } else {
+                EcRsaOaepAsync.decrypt(decryptionKey, this.secret[estimatedIndex], function(decryptedSecret) {
                     if (!EcLinkedData.isProbablyJson(decryptedSecret)) {
-                        decrement();
+                        me.decryptSecretsByKeyAsync(decryptionKey, success, failure);
                     } else {
-                        helper.stop();
                         success(EbacEncryptedSecret.fromEncryptableJson(JSON.parse(decryptedSecret)));
                     }
                 }, function(arg0) {
-                    decrement();
+                    me.decryptSecretsByKeyAsync(decryptionKey, success, failure);
                 });
-            }, function(arg0) {
-                failure("Could not find decryption key.");
-            });
+            }
         } else 
             failure("Secret field is empty.");
+    };
+    prototype.decryptSecretsByKeyAsync = function(decryptionKey, success, failure) {
+        var helper = new EcAsyncHelper();
+        helper.each(this.secret, function(decryptionSecret, decrement) {
+            EcRsaOaepAsync.decrypt(decryptionKey, decryptionSecret, function(decryptedSecret) {
+                if (helper.counter == -1) {
+                    return;
+                }
+                if (!EcLinkedData.isProbablyJson(decryptedSecret)) {
+                    decrement();
+                } else {
+                    helper.stop();
+                    success(EbacEncryptedSecret.fromEncryptableJson(JSON.parse(decryptedSecret)));
+                }
+            }, function(arg0) {
+                decrement();
+            });
+        }, function(arg0) {
+            failure("Could not find decryption key.");
+        });
     };
     /**
      *  Checks if this encrypted value is an encrypted version of a specific
@@ -592,7 +658,7 @@ EcEncryptedValue = stjs.extend(EcEncryptedValue, EbacEncryptedValue, [], functio
             return false;
         }
         var typeSplit = (type.split("/"));
-        return this.encryptedType.equals(type) || this.encryptedType.equals(typeSplit[typeSplit.length - 1]);
+        return this.encryptedType == type || this.encryptedType == typeSplit[typeSplit.length - 1];
     };
     /**
      *  Adds a reader to the object, if the reader does not exist.
@@ -607,7 +673,7 @@ EcEncryptedValue = stjs.extend(EcEncryptedValue, EbacEncryptedValue, [], functio
             this.reader = new Array();
         }
         for (var i = 0; i < this.reader.length; i++) {
-            if (this.reader[i].equals(pem)) {
+            if (this.reader[i] == pem) {
                 return;
             }
         }
@@ -632,7 +698,7 @@ EcEncryptedValue = stjs.extend(EcEncryptedValue, EbacEncryptedValue, [], functio
             this.reader = new Array();
         }
         for (var i = 0; i < this.reader.length; i++) {
-            if (this.reader[i].equals(pem)) {
+            if (this.reader[i] == pem) {
                 this.reader.splice(i, 1);
             }
         }
@@ -728,6 +794,7 @@ EcRepository = stjs.extend(EcRepository, null, [], function(constructor, prototy
     constructor.cache = new Object();
     constructor.fetching = new Object();
     constructor.repos = new Array();
+    prototype.adminKeys = null;
     prototype.selectedServer = null;
     prototype.autoDetectFound = false;
     /**
@@ -745,11 +812,21 @@ EcRepository = stjs.extend(EcRepository, null, [], function(constructor, prototy
      *  @static
      */
     constructor.get = function(url, success, failure) {
+        var originalUrl = url;
+        if (EcRemote.async == false) {
+            var result = EcRepository.getBlocking(url);
+            if (result == null) {
+                if (failure != null) 
+                    failure("Could not locate object. May be due to EcRepository.alwaysTryUrl flag.");
+            } else if (success != null) 
+                success(result);
+            return;
+        }
         if (EcRepository.caching) {
             if ((EcRepository.cache)[url] != null) {
                 if (EcRemote.async) {
                     Task.immediate(function() {
-                        success((EcRepository.cache)[url]);
+                        success((EcRepository.cache)[originalUrl]);
                     });
                 } else {
                     success((EcRepository.cache)[url]);
@@ -760,7 +837,7 @@ EcRepository = stjs.extend(EcRepository, null, [], function(constructor, prototy
                 if ((EcRepository.fetching)[url] != null) {
                     if ((EcRepository.fetching)[url] > new Date().getTime()) {
                         setTimeout(function() {
-                            EcRepository.get(url, success, failure);
+                            EcRepository.get(originalUrl, success, failure);
                         }, 100);
                         return;
                     }
@@ -769,17 +846,22 @@ EcRepository = stjs.extend(EcRepository, null, [], function(constructor, prototy
             }
         }
         if (!EcRepository.shouldTryUrl(url)) {
-            EcRepository.find(url, "Could not locate object. May be due to EcRepository.alwaysTryUrl flag.", new Object(), 0, success, failure);
-            return;
+            if (EcRepository.repos.length == 1) 
+                url = EcRemoteLinkedData.veryShortId(EcRepository.repos[0].selectedServer, EcCrypto.md5(url));
+             else {
+                EcRepository.find(url, "Could not locate object. May be due to EcRepository.alwaysTryUrl flag.", new Object(), 0, success, failure);
+                return;
+            }
         }
         var fd = new FormData();
+        var finalUrl = url;
         if (EcRepository.unsigned) {
-            EcRemote.postExpectingObject(url, null, fd, function(p1) {
-                delete (EcRepository.fetching)[url];
+            EcRemote.getExpectingObject(finalUrl, null, function(p1) {
+                delete (EcRepository.fetching)[originalUrl];
                 var d = new EcRemoteLinkedData("", "");
                 d.copyFrom(p1);
                 if (d.getFullType() == null) {
-                    EcRepository.find(url, JSON.stringify(p1), new Object(), 0, success, failure);
+                    EcRepository.find(originalUrl, JSON.stringify(p1), new Object(), 0, success, failure);
                     return;
                 }
                 if (EcRepository.caching) {
@@ -788,22 +870,22 @@ EcRepository = stjs.extend(EcRepository, null, [], function(constructor, prototy
                 }
                 success(d);
             }, function(p1) {
-                EcRepository.find(url, p1, new Object(), 0, success, failure);
+                EcRepository.find(originalUrl, p1, new Object(), 0, success, failure);
             });
         } else 
             EcIdentityManager.signatureSheetAsync(60000, url, function(p1) {
-                if ((EcRepository.cache)[url] != null) {
-                    delete (EcRepository.fetching)[url];
-                    success((EcRepository.cache)[url]);
+                if ((EcRepository.cache)[originalUrl] != null) {
+                    delete (EcRepository.fetching)[originalUrl];
+                    success((EcRepository.cache)[originalUrl]);
                     return;
                 }
                 fd.append("signatureSheet", p1);
-                EcRemote.postExpectingObject(url, null, fd, function(p1) {
-                    delete (EcRepository.fetching)[url];
+                EcRemote.postExpectingObject(finalUrl, null, fd, function(p1) {
+                    delete (EcRepository.fetching)[originalUrl];
                     var d = new EcRemoteLinkedData("", "");
                     d.copyFrom(p1);
                     if (d.getFullType() == null) {
-                        EcRepository.find(url, JSON.stringify(p1), new Object(), 0, success, failure);
+                        EcRepository.find(originalUrl, JSON.stringify(p1), new Object(), 0, success, failure);
                         return;
                     }
                     if (EcRepository.caching) {
@@ -812,9 +894,9 @@ EcRepository = stjs.extend(EcRepository, null, [], function(constructor, prototy
                     }
                     success(d);
                 }, function(p1) {
-                    EcRepository.find(url, p1, new Object(), 0, success, failure);
+                    EcRepository.find(originalUrl, p1, new Object(), 0, success, failure);
                 });
-            });
+            }, failure);
     };
     constructor.shouldTryUrl = function(url) {
         if (url == null) 
@@ -823,7 +905,7 @@ EcRepository = stjs.extend(EcRepository, null, [], function(constructor, prototy
             return true;
         if (EcRepository.repos.length == 0) 
             return true;
-        if (url.contains("/api/") || url.contains("/data/")) 
+        if (url.indexOf("/api/") != -1 || url.indexOf("/data/") != -1) 
             return true;
         var validUrlFound = false;
         for (var i = 0; i < EcRepository.repos.length; i++) {
@@ -863,6 +945,9 @@ EcRepository = stjs.extend(EcRepository, null, [], function(constructor, prototy
                             log("Searching for exact ID:" + url + ", found more than one@:" + repo.selectedServer);
                         done = true;
                         delete (EcRepository.fetching)[url];
+                        if (EcRepository.caching) {
+                            (EcRepository.cache)[url] = strings[i];
+                        }
                         success(strings[i]);
                     }
                 }
@@ -871,7 +956,7 @@ EcRepository = stjs.extend(EcRepository, null, [], function(constructor, prototy
                 EcRepository.find(url, error, history, i + 1, success, failure);
             }
         }, function(s) {
-            EcRepository.find(url, error, history, i + 1, success, failure);
+            EcRepository.find(url, s, history, i + 1, success, failure);
         });
     };
     constructor.findBlocking = function(url, error, history, i) {
@@ -889,6 +974,10 @@ EcRepository = stjs.extend(EcRepository, null, [], function(constructor, prototy
          else {
             for (var j = 0; j < strings.length; j++) {
                 if (strings[j].id == url) {
+                    delete (EcRepository.fetching)[url];
+                    if (EcRepository.caching) {
+                        (EcRepository.cache)[url] = strings[j];
+                    }
                     return strings[j];
                 }
             }
@@ -906,39 +995,45 @@ EcRepository = stjs.extend(EcRepository, null, [], function(constructor, prototy
      *  @static
      */
     constructor.getBlocking = function(url) {
-        if (url == null) 
+        var originalUrl = url;
+        if (originalUrl == null) 
             return null;
         if (EcRepository.caching) {
-            if ((EcRepository.cache)[url] != null) {
-                return (EcRepository.cache)[url];
+            if ((EcRepository.cache)[originalUrl] != null) {
+                return (EcRepository.cache)[originalUrl];
             }
         }
-        if (!EcRepository.shouldTryUrl(url)) {
-            return EcRepository.findBlocking(url, "Could not locate object. May be due to EcRepository.alwaysTryUrl flag.", new Object(), 0);
+        if (!EcRepository.shouldTryUrl(originalUrl)) {
+            if (EcRepository.repos.length == 1) 
+                url = EcRemoteLinkedData.veryShortId(EcRepository.repos[0].selectedServer, EcCrypto.md5(url));
+             else {
+                return EcRepository.findBlocking(originalUrl, "Could not locate object. May be due to EcRepository.alwaysTryUrl flag.", new Object(), 0);
+            }
         }
         var fd = new FormData();
         var p1 = null;
         if (EcRepository.unsigned == false) {
-            p1 = EcIdentityManager.signatureSheet(60000, url);
+            p1 = EcIdentityManager.signatureSheet(60000, originalUrl);
             fd.append("signatureSheet", p1);
         }
         var oldAsync = EcRemote.async;
         EcRemote.async = false;
-        EcRemote.postExpectingObject(url, null, fd, function(p1) {
+        var finalUrl = url;
+        EcRemote.postExpectingObject(finalUrl, null, fd, function(p1) {
             var d = new EcRemoteLinkedData("", "");
             d.copyFrom(p1);
             if (d.getFullType() == null) {
-                EcRepository.findBlocking(url, JSON.stringify(p1), new Object(), 0);
+                EcRepository.findBlocking(originalUrl, JSON.stringify(p1), new Object(), 0);
                 return;
             }
-            (EcRepository.cache)[url] = d;
+            (EcRepository.cache)[originalUrl] = d;
         }, function(s) {
-            (EcRepository.cache)[url] = EcRepository.findBlocking(url, s, new Object(), 0);
+            (EcRepository.cache)[originalUrl] = EcRepository.findBlocking(originalUrl, s, new Object(), 0);
         });
         EcRemote.async = oldAsync;
-        var result = (EcRepository.cache)[url];
+        var result = (EcRepository.cache)[originalUrl];
         if (!EcRepository.caching) {
-            (EcRepository.cache)[url] = null;
+            delete (EcRepository.cache)[originalUrl];
         }
         return result;
     };
@@ -978,10 +1073,7 @@ EcRepository = stjs.extend(EcRepository, null, [], function(constructor, prototy
         return s;
     };
     /**
-     *  Attempts to save a piece of data. Does some checks before saving to
-     *  ensure the data is valid. Warns the developer that they are using the
-     *  repository save function rather than an object specific version, this can
-     *  be avoided by calling _save
+     *  Attempts to save a piece of data.
      *  <p>
      *  Uses a signature sheet informed by the owner field of the data.
      * 
@@ -995,7 +1087,24 @@ EcRepository = stjs.extend(EcRepository, null, [], function(constructor, prototy
      *  @static
      */
     constructor.save = function(data, success, failure) {
-        EcRepository._save(data, success, failure);
+        EcRepository._save(data, success, failure, null);
+    };
+    /**
+     *  Attempts to save a piece of data. If the @id of the data is not of this server, will register the data to the server.
+     *  <p>
+     *  Uses a signature sheet informed by the owner field of the data.
+     * 
+     *  @param {EcRemoteLinkedData} data Data to save to the location designated
+     *                              by its id.
+     *  @param {Callback1<String>}  success Callback triggered on successful save
+     *  @param {Callback1<String>}  failure Callback triggered if error during
+     *                              save
+     *  @memberOf EcRepository
+     *  @method save
+     *  @static
+     */
+    prototype.saveTo = function(data, success, failure) {
+        EcRepository._save(data, success, failure, this);
     };
     /**
      *  Attempts to save a piece of data. Does some checks before saving to
@@ -1012,7 +1121,7 @@ EcRepository = stjs.extend(EcRepository, null, [], function(constructor, prototy
      *  @method _save
      *  @static
      */
-    constructor._save = function(data, success, failure) {
+    constructor._save = function(data, success, failure, repo) {
         if (data.invalid()) {
             var msg = "Cannot save data. It is missing a vital component.";
             if (failure != null) {
@@ -1031,10 +1140,10 @@ EcRepository = stjs.extend(EcRepository, null, [], function(constructor, prototy
         if (EcEncryptedValue.encryptOnSave(data.id, null)) {
             var encrypted = EcEncryptedValue.toEncryptedValue(data, false);
             EcIdentityManager.sign(data);
-            EcRepository._saveWithoutSigning(data, success, failure);
+            EcRepository._saveWithoutSigning(data, success, failure, repo);
         } else {
             EcIdentityManager.sign(data);
-            EcRepository._saveWithoutSigning(data, success, failure);
+            EcRepository._saveWithoutSigning(data, success, failure, repo);
         }
     };
     /**
@@ -1051,7 +1160,7 @@ EcRepository = stjs.extend(EcRepository, null, [], function(constructor, prototy
      *  @method _saveWithoutSigning
      *  @static
      */
-    constructor._saveWithoutSigning = function(data, success, failure) {
+    constructor._saveWithoutSigning = function(data, success, failure, repo) {
         if (EcRepository.caching) {
             delete (EcRepository.cache)[data.id];
             delete (EcRepository.cache)[data.shortId()];
@@ -1060,29 +1169,32 @@ EcRepository = stjs.extend(EcRepository, null, [], function(constructor, prototy
             failure("Data is malformed.");
             return;
         }
-        data.updateTimestamp();
+        if (EcRepository.alwaysTryUrl || repo == null || repo.constructor.shouldTryUrl(data.id)) 
+            data.updateTimestamp();
         var fd = new FormData();
         fd.append("data", data.toJson());
+        var afterSignatureSheet = function(signatureSheet) {
+            fd.append("signatureSheet", signatureSheet);
+            if (!EcRepository.alwaysTryUrl) 
+                if (repo != null) 
+                    if (!repo.constructor.shouldTryUrl(data.id)) {
+                        EcRemote.postExpectingString(EcRemote.urlAppend(repo.selectedServer, "data/" + data.getDottedType() + "/" + EcCrypto.md5(data.id)), "", fd, success, failure);
+                        return;
+                    }
+            EcRemote.postExpectingString(data.id, "", fd, success, failure);
+        };
         if (EcRemote.async == false) {
+            var signatureSheet;
             if (data.owner != null && data.owner.length > 0) {
-                var arg0 = EcIdentityManager.signatureSheetFor(data.owner, 60000, data.id);
-                fd.append("signatureSheet", arg0);
-                EcRemote.postExpectingString(data.id, "", fd, success, failure);
+                signatureSheet = EcIdentityManager.signatureSheetFor(data.owner, 60000, data.id);
             } else {
-                var arg0 = EcIdentityManager.signatureSheet(60000, data.id);
-                fd.append("signatureSheet", arg0);
-                EcRemote.postExpectingString(data.id, "", fd, success, failure);
+                signatureSheet = EcIdentityManager.signatureSheet(60000, data.id);
             }
+            afterSignatureSheet(signatureSheet);
         } else if (data.owner != null && data.owner.length > 0) {
-            EcIdentityManager.signatureSheetForAsync(data.owner, 60000, data.id, function(arg0) {
-                fd.append("signatureSheet", arg0);
-                EcRemote.postExpectingString(data.id, "", fd, success, failure);
-            });
+            EcIdentityManager.signatureSheetForAsync(data.owner, 60000, data.id, afterSignatureSheet, failure);
         } else {
-            EcIdentityManager.signatureSheetAsync(60000, data.id, function(arg0) {
-                fd.append("signatureSheet", arg0);
-                EcRemote.postExpectingString(data.id, "", fd, success, failure);
-            });
+            EcIdentityManager.signatureSheetAsync(60000, data.id, afterSignatureSheet, failure);
         }
     };
     /**
@@ -1123,9 +1235,87 @@ EcRepository = stjs.extend(EcRepository, null, [], function(constructor, prototy
             delete (EcRepository.cache)[data.id];
             delete (EcRepository.cache)[data.shortId()];
         }
-        EcIdentityManager.signatureSheetForAsync(data.owner, 60000, data.id, function(signatureSheet) {
-            EcRemote._delete(data.shortId(), signatureSheet, success, failure);
-        });
+        var targetUrl;
+        targetUrl = data.shortId();
+        if (data.owner != null && data.owner.length > 0) {
+            if (EcRemote.async) {
+                EcIdentityManager.signatureSheetForAsync(data.owner, 60000, data.id, function(signatureSheet) {
+                    if (signatureSheet.length == 2) {
+                        for (var i = 0; i < EcRepository.repos.length; i++) {
+                            if (data.id.indexOf(EcRepository.repos[i].selectedServer) != -1) {
+                                EcRepository.repos[i].deleteRegistered(data, success, failure);
+                                return;
+                            }
+                        }
+                        failure("Cannot delete object without a signature. If deleting from a server, use the non-static _delete");
+                    } else 
+                        EcRemote._delete(targetUrl, signatureSheet, success, failure);
+                }, failure);
+            } else {
+                var signatureSheet = EcIdentityManager.signatureSheetFor(data.owner, 60000, data.id);
+                if (signatureSheet.length == 2) {
+                    for (var i = 0; i < EcRepository.repos.length; i++) {
+                        if (data.id.indexOf(EcRepository.repos[i].selectedServer) != -1) {
+                            EcRepository.repos[i].deleteRegistered(data, success, failure);
+                            return;
+                        }
+                    }
+                    failure("Cannot delete object without a signature. If deleting from a server, use the non-static _delete");
+                } else 
+                    EcRemote._delete(targetUrl, signatureSheet, success, failure);
+            }
+        } else {
+            EcRemote._delete(targetUrl, "[]", success, failure);
+        }
+    };
+    /**
+     *  Attempts to delete a piece of data.
+     *  <p>
+     *  Uses a signature sheet informed by the owner field of the data.
+     * 
+     *  @param {EcRemoteLinkedData} data Data to save to the location designated
+     *                              by its id.
+     *  @param {Callback1<String>}  success Callback triggered on successful
+     *                              delete
+     *  @param {Callback1<String>}  failure Callback triggered if error during
+     *                              delete
+     *  @memberOf EcRepository
+     *  @method DELETE
+     *  @static
+     */
+    prototype.deleteRegistered = function(data, success, failure) {
+        if (EcRepository.caching) {
+            delete (EcRepository.cache)[data.id];
+            delete (EcRepository.cache)[data.shortId()];
+        }
+        var targetUrl;
+        if (EcRepository.shouldTryUrl(data.id)) 
+            targetUrl = data.shortId();
+         else {
+            targetUrl = EcRemote.urlAppend(this.selectedServer, "data/" + data.getDottedType() + "/" + EcCrypto.md5(data.id));
+        }
+        var me = this;
+        if (data.owner != null && data.owner.length > 0) {
+            if (EcRemote.async) {
+                EcIdentityManager.signatureSheetForAsync(data.owner, 60000, data.id, function(signatureSheet) {
+                    if (signatureSheet.length == 2 && me.adminKeys != null) {
+                        EcIdentityManager.signatureSheetForAsync(me.adminKeys, 60000, data.id, function(signatureSheet) {
+                            EcRemote._delete(targetUrl, signatureSheet, success, failure);
+                        }, failure);
+                    } else 
+                        EcRemote._delete(targetUrl, signatureSheet, success, failure);
+                }, failure);
+            } else {
+                var signatureSheet = EcIdentityManager.signatureSheetFor(data.owner, 60000, data.id);
+                if (signatureSheet.length == 2 && me.adminKeys != null) {
+                    signatureSheet = EcIdentityManager.signatureSheetFor(me.adminKeys, 60000, data.id);
+                    EcRemote._delete(targetUrl, signatureSheet, success, failure);
+                } else 
+                    EcRemote._delete(targetUrl, signatureSheet, success, failure);
+            }
+        } else {
+            EcRemote._delete(targetUrl, "[]", success, failure);
+        }
     };
     /**
      *  Retrieves data from the server and caches it for use later during the
@@ -1150,10 +1340,8 @@ EcRepository = stjs.extend(EcRepository, null, [], function(constructor, prototy
             var url = urls[i];
             if ((EcRepository.cache)[url] != null) {} else if (url.startsWith(this.selectedServer)) {
                 cacheUrls.push(url.replace(this.selectedServer, "").replace("custom/", ""));
-            } else if (!EcRepository.shouldTryUrl(url)) {
-                var m = forge.md.md5.create();
-                m.update(url);
-                cacheUrls.push("data/" + m.digest().toHex());
+            } else {
+                cacheUrls.push("data/" + EcCrypto.md5(url));
             }
         }
         if (cacheUrls.length == 0) {
@@ -1166,64 +1354,51 @@ EcRepository = stjs.extend(EcRepository, null, [], function(constructor, prototy
         fd.append("data", JSON.stringify(cacheUrls));
         var me = this;
         if (EcRepository.unsigned) {
-            EcRemote.postExpectingObject(me.selectedServer, "sky/repo/multiGet", fd, function(p1) {
-                var results = p1;
-                for (var i = 0; i < results.length; i++) {
-                    var d = new EcRemoteLinkedData(null, null);
-                    d.copyFrom(results[i]);
-                    results[i] = d;
-                    if (EcRepository.caching) {
-                        if (!EcRepository.shouldTryUrl(d.id)) {
-                            var m = forge.md.md5.create();
-                            m.update(d.id);
-                            var md5 = m.digest().toHex();
-                            for (var j = 0; j < urls.length; j++) {
-                                var url = urls[j];
-                                if (url.indexOf(md5) != -1) {
-                                    (EcRepository.cache)[url] = d;
-                                    break;
-                                }
-                            }
-                        }
-                        (EcRepository.cache)[d.shortId()] = d;
-                        (EcRepository.cache)[d.id] = d;
-                    }
-                }
-                if (success != null) {
-                    success();
-                }
-            }, null);
-        } else 
+            this.precachePost(success, cacheUrls, fd, me);
+        } else {
             EcIdentityManager.signatureSheetAsync(60000, this.selectedServer, function(p1) {
                 fd.append("signatureSheet", p1);
-                EcRemote.postExpectingObject(me.selectedServer, "sky/repo/multiGet", fd, function(p1) {
-                    var results = p1;
-                    for (var i = 0; i < results.length; i++) {
-                        var d = new EcRemoteLinkedData(null, null);
-                        d.copyFrom(results[i]);
-                        results[i] = d;
-                        if (EcRepository.caching) {
-                            if (!EcRepository.shouldTryUrl(d.id)) {
-                                var m = forge.md.md5.create();
-                                m.update(d.id);
-                                var md5 = m.digest().toHex();
-                                for (var j = 0; j < urls.length; j++) {
-                                    var url = urls[j];
-                                    if (url.indexOf(md5) != -1) {
-                                        (EcRepository.cache)[url] = d;
-                                        break;
-                                    }
-                                }
+                me.precachePost(success, cacheUrls, fd, me);
+            }, null);
+        }
+    };
+    /**
+     *  Retrieves data from the server and caches it for use later during the
+     *  application. This should be called before the data is needed if possible,
+     *  so loading displays can be faster.
+     * 
+     *  @param {String[]}  urls List of Data ID Urls that should be precached
+     *  @param {Callback0} success Callback triggered once all of the data has
+     *                     been retrieved
+     *  @memberOf EcRepository
+     *  @method precachePost
+     */
+    prototype.precachePost = function(success, cacheUrls, fd, me) {
+        EcRemote.postExpectingObject(me.selectedServer, "sky/repo/multiGet", fd, function(p1) {
+            var results = p1;
+            for (var i = 0; i < results.length; i++) {
+                var d = new EcRemoteLinkedData(null, null);
+                d.copyFrom(results[i]);
+                results[i] = d;
+                if (EcRepository.caching) {
+                    if (!EcRepository.shouldTryUrl(d.id)) {
+                        var md5 = EcCrypto.md5(d.id);
+                        for (var j = 0; j < cacheUrls.length; j++) {
+                            var url = cacheUrls[j];
+                            if (url.indexOf(md5) != -1) {
+                                (EcRepository.cache)[url] = d;
+                                break;
                             }
-                            (EcRepository.cache)[d.shortId()] = d;
-                            (EcRepository.cache)[d.id] = d;
                         }
                     }
-                    if (success != null) {
-                        success();
-                    }
-                }, null);
-            });
+                    (EcRepository.cache)[d.shortId()] = d;
+                    (EcRepository.cache)[d.id] = d;
+                }
+            }
+            if (success != null) {
+                success();
+            }
+        }, null);
     };
     /**
      *  Gets a JSON-LD object from the place designated by the URI.
@@ -1246,61 +1421,34 @@ EcRepository = stjs.extend(EcRepository, null, [], function(constructor, prototy
             }
             return;
         }
-        if (EcRepository.caching) {
-            var cachedVals = [];
-            for (var i = 0; i < urls.length; i++) {
-                if ((EcRepository.cache)[urls[i]] != null) {
-                    cachedVals.push((EcRepository.cache)[urls[i]]);
-                }
-            }
-            if (cachedValues != null) 
-                cachedValues(cachedVals);
-        }
-        var onServer = new Array();
-        for (var i = 0; i < urls.length; i++) {
-            var url = urls[i];
-            if (url.startsWith(this.selectedServer)) {
-                onServer.push(url.replace(this.selectedServer, "").replace("custom/", ""));
-            }
-        }
-        var fd = new FormData();
-        fd.append("data", JSON.stringify(onServer));
-        var me = this;
-        if (EcRepository.unsigned == true) 
-            EcRemote.postExpectingObject(me.selectedServer, "sky/repo/multiGet", fd, function(p1) {
-                var results = p1;
-                for (var i = 0; i < results.length; i++) {
-                    var d = new EcRemoteLinkedData(null, null);
-                    d.copyFrom(results[i]);
-                    results[i] = d;
-                    if (EcRepository.caching) {
-                        (EcRepository.cache)[d.shortId()] = d;
-                        (EcRepository.cache)[d.id] = d;
-                    }
-                }
-                if (success != null) {
+        var results = new Array();
+        if (EcRepository.caching) 
+            this.precache(urls, function() {
+                var eah = new EcAsyncHelper();
+                eah.each(urls, function(url, done) {
+                    EcRepository.get(url, function(result) {
+                        results.push(result);
+                        done();
+                    }, function(s) {
+                        done();
+                    });
+                }, function(urls) {
                     success(results);
-                }
-            }, failure);
-         else 
-            EcIdentityManager.signatureSheetAsync(60000, this.selectedServer, function(p1) {
-                fd.append("signatureSheet", p1);
-                EcRemote.postExpectingObject(me.selectedServer, "sky/repo/multiGet", fd, function(p1) {
-                    var results = p1;
-                    for (var i = 0; i < results.length; i++) {
-                        var d = new EcRemoteLinkedData(null, null);
-                        d.copyFrom(results[i]);
-                        results[i] = d;
-                        if (EcRepository.caching) {
-                            (EcRepository.cache)[d.shortId()] = d;
-                            (EcRepository.cache)[d.id] = d;
-                        }
-                    }
-                    if (success != null) {
-                        success(results);
-                    }
-                }, failure);
+                });
             });
+         else {
+            var eah = new EcAsyncHelper();
+            eah.each(urls, function(url, done) {
+                EcRepository.get(url, function(result) {
+                    results.push(result);
+                    done();
+                }, function(s) {
+                    done();
+                });
+            }, function(urls) {
+                success(results);
+            });
+        }
     };
     /**
      *  Search a repository for JSON-LD compatible data.
@@ -1343,8 +1491,6 @@ EcRepository = stjs.extend(EcRepository, null, [], function(constructor, prototy
      *                                           Google query strings.
      *  @param {Object}                          paramObj Additional parameters that can be used to tailor
      *                                           the search.
-     *  @param size
-     *  @param start
      *  @param {Callback1<EcRemoteLinkedData>}   eachSuccess Success event for each
      *                                           found object.
      *  @param {Callback1<EcRemoteLinkedData[]>} success Success event, called
@@ -1354,6 +1500,20 @@ EcRepository = stjs.extend(EcRepository, null, [], function(constructor, prototy
      *  @method searchWithParams
      */
     prototype.searchWithParams = function(originalQuery, originalParamObj, eachSuccess, success, failure) {
+        if (EcRemote.async == false) {
+            var result = this.searchWithParamsBlocking(originalQuery, originalParamObj);
+            if (result == null) {
+                if (failure != null) 
+                    failure("Search failed.");
+            } else {
+                for (var i = 0; i < result.length; i++) 
+                    if (eachSuccess != null) 
+                        eachSuccess(result[i]);
+                if (success != null) 
+                    success(result);
+            }
+            return;
+        }
         var query = originalQuery;
         var paramObj = originalParamObj;
         if (paramObj == null) {
@@ -1369,7 +1529,7 @@ EcRepository = stjs.extend(EcRepository, null, [], function(constructor, prototy
         if (EcRepository.cachingSearch) {
             cacheKey = JSON.stringify(paramProps) + query;
             if ((EcRepository.cache)[cacheKey] != null) {
-                this.handleSearchResults((EcRepository.cache)[cacheKey], eachSuccess, success);
+                this.handleSearchResults((EcRepository.cache)[cacheKey], eachSuccess, success, failure);
                 return;
             }
             var me = this;
@@ -1402,7 +1562,7 @@ EcRepository = stjs.extend(EcRepository, null, [], function(constructor, prototy
                 if (cacheKey != null) {
                     delete (EcRepository.fetching)[cacheKey];
                 }
-                me.handleSearchResults(p1, eachSuccess, success);
+                me.handleSearchResults(p1, eachSuccess, success, failure);
             }, function(p1) {
                 if (cacheKey != null) {
                     delete (EcRepository.fetching)[cacheKey];
@@ -1421,7 +1581,7 @@ EcRepository = stjs.extend(EcRepository, null, [], function(constructor, prototy
                     if (cacheKey != null) {
                         delete (EcRepository.fetching)[cacheKey];
                     }
-                    me.handleSearchResults(p1, eachSuccess, success);
+                    me.handleSearchResults(p1, eachSuccess, success, failure);
                 }, function(p1) {
                     if (cacheKey != null) {
                         delete (EcRepository.fetching)[cacheKey];
@@ -1430,7 +1590,7 @@ EcRepository = stjs.extend(EcRepository, null, [], function(constructor, prototy
                         failure(p1);
                     }
                 });
-            });
+            }, failure);
     };
     /**
      *  Search a repository for JSON-LD compatible data synchronously.
@@ -1441,8 +1601,6 @@ EcRepository = stjs.extend(EcRepository, null, [], function(constructor, prototy
      *                  Google query strings.
      *  @param {Object} paramObj Additional parameters that can be used to tailor
      *                  the search.
-     *  @param size
-     *  @param start
      *  @returns EcRemoteLinkedData[]
      *  @memberOf EcRepository
      *  @method searchWithParams
@@ -1465,7 +1623,7 @@ EcRepository = stjs.extend(EcRepository, null, [], function(constructor, prototy
         cacheKey = JSON.stringify(paramProps) + query;
         if (EcRepository.cachingSearch) {
             if ((EcRepository.cache)[cacheKey] != null) {
-                return this.handleSearchResults((EcRepository.cache)[cacheKey], null, null);
+                return this.handleSearchResults((EcRepository.cache)[cacheKey], null, null, null);
             }
         }
         var fd = new FormData();
@@ -1503,7 +1661,7 @@ EcRepository = stjs.extend(EcRepository, null, [], function(constructor, prototy
                 (EcRepository.cache)[cacheKey] = null;
             });
         }
-        var result = this.handleSearchResults((EcRepository.cache)[cacheKey], null, null);
+        var result = this.handleSearchResults((EcRepository.cache)[cacheKey], null, null, null);
         if (!EcRepository.cachingSearch) {
             delete (EcRepository.cache)[cacheKey];
         }
@@ -1520,16 +1678,22 @@ EcRepository = stjs.extend(EcRepository, null, [], function(constructor, prototy
         if ((paramObj)["types"] != null) {
             paramProps["types"] = (paramObj)["types"];
         }
+        if ((paramObj)["sort"] != null) {
+            paramProps["sort"] = (paramObj)["sort"];
+        }
+        if ((paramObj)["track_scores"] != null) {
+            paramProps["track_scores"] = (paramObj)["track_scores"];
+        }
         if ((paramObj)["ownership"] != null) {
             var ownership = (paramObj)["ownership"];
             if (!query.startsWith("(") || !query.endsWith(")")) {
                 query = "(" + query + ")";
             }
-            if (ownership.equals("public")) {
+            if (ownership == "public") {
                 query += " AND (_missing_:@owner)";
-            } else if (ownership.equals("owned")) {
+            } else if (ownership == "owned") {
                 query += " AND (_exists_:@owner)";
-            } else if (ownership.equals("me")) {
+            } else if (ownership == "me") {
                 query += " AND (";
                 for (var i = 0; i < EcIdentityManager.ids.length; i++) {
                     if (i != 0) {
@@ -1586,7 +1750,9 @@ EcRepository = stjs.extend(EcRepository, null, [], function(constructor, prototy
                 hostnames.push(window.location.hostname, window.location.hostname.replace(".", ".service."), window.location.hostname + ":8080", window.location.hostname.replace(".", ".service.") + ":8080");
             }
         }
-        servicePrefixes.push("/" + window.location.pathname.split("/")[1] + "/api/", "/" + window.location.pathname.split("/")[1] + "/api/custom/", "/", "/service/", "/api/", "/api/custom/");
+        EcArray.removeDuplicates(hostnames);
+        servicePrefixes.push("/" + window.location.pathname.split("/")[1] + "/api/", "/", "/service/", "/api/");
+        EcArray.removeDuplicates(servicePrefixes);
         var me = this;
         me.autoDetectFound = false;
         for (var j = 0; j < hostnames.length; j++) {
@@ -1594,8 +1760,22 @@ EcRepository = stjs.extend(EcRepository, null, [], function(constructor, prototy
                 for (var i = 0; i < protocols.length; i++) {
                     this.autoDetectRepositoryActualAsync(protocols[i] + "//" + hostnames[j] + servicePrefixes[k].replaceAll("//", "/"), success, failure);
                     setTimeout(function() {
-                        if (me.autoDetectFound == false) 
-                            failure("Could not find service.");
+                        if (me.autoDetectFound == false) {
+                            var servicePrefixes = new Array();
+                            servicePrefixes.push("/" + window.location.pathname.split("/")[1] + "/api/custom/", "/api/custom/");
+                            EcArray.removeDuplicates(servicePrefixes);
+                            for (var j = 0; j < hostnames.length; j++) {
+                                for (var k = 0; k < servicePrefixes.length; k++) {
+                                    for (var i = 0; i < protocols.length; i++) {
+                                        me.autoDetectRepositoryActualAsync(protocols[i] + "//" + hostnames[j] + servicePrefixes[k].replaceAll("//", "/"), success, failure);
+                                        setTimeout(function() {
+                                            if (me.autoDetectFound == false) 
+                                                failure("Could not find service.");
+                                        }, 5000);
+                                    }
+                                }
+                            }
+                        }
                     }, 5000);
                 }
             }
@@ -1632,12 +1812,14 @@ EcRepository = stjs.extend(EcRepository, null, [], function(constructor, prototy
         }
         var hostnames = new Array();
         var servicePrefixes = new Array();
-        if (this.selectedServer != null) {
+        if (this.selectedServer != null && window != null && window.document != null) {
             var e = window.document.createElement("a");
-            (e)["href"] = this.selectedServer;
-            hostnames.push((e)["host"]);
-            servicePrefixes.push((e)["pathname"]);
-        } else {
+            if (e != null) {
+                (e)["href"] = this.selectedServer;
+                hostnames.push((e)["host"]);
+                servicePrefixes.push((e)["pathname"]);
+            }
+        } else if (window != null && window.location != null) {
             if (window.location.host != null) {
                 hostnames.push(window.location.host, window.location.host.replace(".", ".service."), window.location.host + ":8080", window.location.host.replace(".", ".service.") + ":8080");
             }
@@ -1645,7 +1827,19 @@ EcRepository = stjs.extend(EcRepository, null, [], function(constructor, prototy
                 hostnames.push(window.location.hostname, window.location.hostname.replace(".", ".service."), window.location.hostname + ":8080", window.location.hostname.replace(".", ".service.") + ":8080");
             }
         }
-        servicePrefixes.push("/" + window.location.pathname.split("/")[1] + "/api/", "/" + window.location.pathname.split("/")[1] + "/api/custom/", "/", "/service/", "/api/", "/api/custom/");
+        if (window != null) {
+            if (window.location != null) {
+                servicePrefixes.push("/" + window.location.pathname.split("/")[1] + "/api/");
+                servicePrefixes.push("/" + window.location.pathname.split("/")[1] + "/api/custom/");
+            }
+        }
+        if (hostnames.length == 0) {
+            hostnames.push("localhost", "localhost:8080");
+        }
+        servicePrefixes.push("/");
+        servicePrefixes.push("/service/");
+        servicePrefixes.push("/api/");
+        servicePrefixes.push("/api/custom/");
         for (var j = 0; j < hostnames.length; j++) {
             for (var k = 0; k < servicePrefixes.length; k++) {
                 for (var i = 0; i < protocols.length; i++) {
@@ -1671,17 +1865,8 @@ EcRepository = stjs.extend(EcRepository, null, [], function(constructor, prototy
         var me = this;
         var successCheck = function(p1) {
             if (p1 != null) {
-                if ((p1)["ping"].equals("pong")) {
-                    me.selectedServer = guess;
-                    me.autoDetectFound = true;
-                    success();
-                }
-            }
-        };
-        var failureCheck = function(p1) {
-            if (p1 != null) {
-                if (!p1.equals("")) {
-                    if (p1.contains("pong")) {
+                if ((p1)["ping"] == "pong") {
+                    if (me.autoDetectFound == false) {
                         me.selectedServer = guess;
                         me.autoDetectFound = true;
                         success();
@@ -1689,7 +1874,22 @@ EcRepository = stjs.extend(EcRepository, null, [], function(constructor, prototy
                 }
             }
         };
-        if (guess != null && guess.equals("") == false) {
+        var failureCheck = function(p1) {
+            if (p1 != null) {
+                if (!(p1 == "")) {
+                    try {
+                        if (p1.indexOf("pong") != -1) {
+                            if (me.autoDetectFound == false) {
+                                me.selectedServer = guess;
+                                me.autoDetectFound = true;
+                                success();
+                            }
+                        }
+                    }catch (ex) {}
+                }
+            }
+        };
+        if (guess != null && guess != "") {
             try {
                 EcRemote.getExpectingObject(guess, "ping", successCheck, failureCheck);
             }catch (ex) {}
@@ -1711,7 +1911,7 @@ EcRepository = stjs.extend(EcRepository, null, [], function(constructor, prototy
         var me = this;
         var successCheck = function(p1) {
             if (p1 != null) {
-                if ((p1)["ping"].equals("pong")) {
+                if ((p1)["ping"] == "pong") {
                     me.selectedServer = guess;
                     me.autoDetectFound = true;
                 }
@@ -1719,15 +1919,17 @@ EcRepository = stjs.extend(EcRepository, null, [], function(constructor, prototy
         };
         var failureCheck = function(p1) {
             if (p1 != null) {
-                if (!p1.equals("")) {
-                    if (p1.contains("pong")) {
-                        me.selectedServer = guess;
-                        me.autoDetectFound = true;
-                    }
+                if (p1 != "") {
+                    try {
+                        if (p1.indexOf("pong") != -1) {
+                            me.selectedServer = guess;
+                            me.autoDetectFound = true;
+                        }
+                    }catch (ex) {}
                 }
             }
         };
-        if (guess != null && guess.equals("") == false) {
+        if (guess != null && guess != "") {
             try {
                 EcRemote.getExpectingObject(guess, "ping", successCheck, failureCheck);
             }catch (ex) {}
@@ -1765,7 +1967,7 @@ EcRepository = stjs.extend(EcRepository, null, [], function(constructor, prototy
      *  @method backup
      */
     prototype.backup = function(serverSecret, success, failure) {
-        EcRemote.getExpectingObject(this.selectedServer, "skyrepo/util/backup?secret=" + serverSecret, success, failure);
+        EcRemote.getExpectingObject(this.selectedServer, "util/backup?secret=" + serverSecret, success, failure);
     };
     /**
      *  Restores the skyrepo elasticsearch backup from the server backup directory
@@ -1777,7 +1979,7 @@ EcRepository = stjs.extend(EcRepository, null, [], function(constructor, prototy
      *  @method restoreBackup
      */
     prototype.restoreBackup = function(serverSecret, success, failure) {
-        EcRemote.getExpectingObject(this.selectedServer, "skyrepo/util/restore?secret=" + serverSecret, success, failure);
+        EcRemote.getExpectingObject(this.selectedServer, "util/restore?secret=" + serverSecret, success, failure);
     };
     /**
      *  Wipes all data from the the skyrepo elasticsearch, can only be restored by using backup restore
@@ -1789,7 +1991,7 @@ EcRepository = stjs.extend(EcRepository, null, [], function(constructor, prototy
      *  @method wipe
      */
     prototype.wipe = function(serverSecret, success, failure) {
-        EcRemote.getExpectingObject(this.selectedServer, "skyrepo/util/purge?secret=" + serverSecret, success, failure);
+        EcRemote.getExpectingObject(this.selectedServer, "util/purge?secret=" + serverSecret, success, failure);
     };
     /**
      *  Handles the search results in search by params, before returning them
@@ -1800,11 +2002,17 @@ EcRepository = stjs.extend(EcRepository, null, [], function(constructor, prototy
      *                                           trigger for each search result
      *  @param {Callback1<EcRemoteLinkedData[]>} success Callback function to
      *                                           trigger with all search results
+     *  @param failure
      *  @memberOf EcRepository
      *  @method handleSearchResults
      *  @private
      */
-    prototype.handleSearchResults = function(results, eachSuccess, success) {
+    prototype.handleSearchResults = function(results, eachSuccess, success, failure) {
+        if (results == null) {
+            if (failure != null) 
+                failure("Error in search. See HTTP request for more details.");
+            return null;
+        }
         for (var i = 0; i < results.length; i++) {
             var d = new EcRemoteLinkedData(null, null);
             d.copyFrom(results[i]);
@@ -1841,13 +2049,19 @@ EcRepository = stjs.extend(EcRepository, null, [], function(constructor, prototy
         } else {
             service = "/sky/admin";
         }
+        var me = this;
         EcRemote.getExpectingObject(this.selectedServer, service, function(p1) {
-            success(p1);
+            var ary = p1;
+            me.adminKeys = new Array();
+            for (var i = 0; i < ary.length; i++) {
+                me.adminKeys.push(ary[i]);
+            }
+            success(ary);
         }, function(p1) {
             failure("");
         });
     };
-}, {cache: "Object", fetching: "Object", repos: {name: "Array", arguments: ["EcRepository"]}}, {});
+}, {cache: "Object", fetching: "Object", repos: {name: "Array", arguments: ["EcRepository"]}, adminKeys: {name: "Array", arguments: [null]}}, {});
 /**
  *  Implementation of a file with methods for communicating with repository services
  * 
@@ -1978,14 +2192,14 @@ EcFile = stjs.extend(EcFile, GeneralFile, [], function(constructor, prototype) {
      */
     prototype.save = function(success, failure) {
         if (this.name == null || this.name == "") {
-            var msg = "Competency Name can not be empty";
+            var msg = "File Name can not be empty";
             if (failure != null) 
                 failure(msg);
              else 
                 console.error(msg);
             return;
         }
-        EcRepository._save(this, success, failure);
+        EcRepository.save(this, success, failure);
     };
     /**
      *  Deletes the file from the repository using repository web services
@@ -1997,7 +2211,7 @@ EcFile = stjs.extend(EcFile, GeneralFile, [], function(constructor, prototype) {
      *  @memberOf EcFile
      *  @method _delete
      */
-    prototype._delete = function(success, failure) {
-        EcRepository.DELETE(this, success, failure);
+    prototype._delete = function(repo, success, failure) {
+        repo.constructor.DELETE(this, success, failure);
     };
 }, {owner: {name: "Array", arguments: [null]}, signature: {name: "Array", arguments: [null]}, reader: {name: "Array", arguments: [null]}, atProperties: {name: "Array", arguments: [null]}}, {});

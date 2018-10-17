@@ -1,3 +1,15 @@
+var EcBrowserDetection = function() {};
+EcBrowserDetection = stjs.extend(EcBrowserDetection, null, [], function(constructor, prototype) {
+    constructor.isIeOrEdge = function() {
+        if (window == null) 
+            return false;
+        if (window.navigator == null) 
+            return false;
+        if (window.navigator.appName == null) 
+            return false;
+        return window.navigator.appName == "Microsoft Internet Explorer" || (window.navigator.appName == "Netscape" && window.navigator.appVersion.indexOf("Edge") > -1);
+    };
+}, {}, {});
 /**
  *  Object to hold a triple, used in graph.
  * 
@@ -40,7 +52,7 @@ Triple = stjs.extend(Triple, null, [], function(constructor, prototype) {
             return true;
         if (stjs.isInstanceOf(obj.constructor, Triple)) {
             var t = obj;
-            if (this.source.equals(t.source) && this.destination.equals(t.destination) && this.edge.equals(t.edge)) 
+            if (this.source == t.source && this.destination == t.destination && this.edge == t.edge) 
                 return true;
         }
         return false;
@@ -64,6 +76,8 @@ EcObject = stjs.extend(EcObject, null, [], function(constructor, prototype) {
      *  @method isArray
      */
     constructor.isObject = function(o) {
+        if (o == null) 
+            return false;
         return (typeof o) == "object";
     };
     /**
@@ -100,7 +114,7 @@ EcArray = stjs.extend(EcArray, null, [], function(constructor, prototype) {
      *  @method isArray
      */
     constructor.isArray = function(o) {
-        return toString.call(o) == "[object Array]";
+        return Object.prototype.toString.call(o) == "[object Array]";
     };
     /**
      *  Removes values IFF the values == one another.
@@ -173,32 +187,6 @@ EcLocalStorage = stjs.extend(EcLocalStorage, null, [], function(constructor, pro
         ((s)["removeItem"])(key);
     };
 }, {}, {});
-/**
- *  Created by fray on 7/5/17.
- */
-var Task = function() {};
-Task = stjs.extend(Task, null, [], function(constructor, prototype) {
-    constructor.desiredFps = 10;
-    constructor.lastFrame = null;
-    constructor.tasks = null;
-    constructor.delayedFunctions = 0;
-    constructor.immediateFunctions = 0;
-    constructor.immediate = function(c) {
-        var currentMs = Date.now();
-        var nextFrameMs = stjs.trunc(1000 / Task.desiredFps);
-        if (Task.lastFrame == null || currentMs > Task.lastFrame + nextFrameMs) 
-            return setTimeout(function() {
-                Task.delayedFunctions++;
-                Task.lastFrame = Date.now();
-                c();
-            }, 0);
-         else {
-            Task.immediateFunctions++;
-            c();
-        }
-        return null;
-    };
-}, {tasks: {name: "Array", arguments: ["CallbackOrFunction"]}}, {});
 /**
  *  A hypergraph, consisting of a set of vertices of type <code>V</code> and a
  *  set of hyperedges of type <code>E</code> which connect the vertices. This is
@@ -659,12 +647,6 @@ Hypergraph = stjs.extend(Hypergraph, null, [], function(constructor, prototype) 
      */
     prototype.getSuccessors = function(vertex) {};
 }, {}, {});
-var EcDate = function() {};
-EcDate = stjs.extend(EcDate, null, [], function(constructor, prototype) {
-    constructor.toISOString = function(obj) {
-        return ((obj)["toISOString"])();
-    };
-}, {}, {});
 /**
  *  Wrapper to handle all remote web service invocations.
  * 
@@ -708,7 +690,7 @@ EcRemote = stjs.extend(EcRemote, null, [], function(constructor, prototype) {
      *  @static
      */
     constructor.postExpectingObject = function(server, service, fd, success, failure) {
-        EcRemote.postInner(server, service, fd, null, EcRemote.getSuccessJSONCallback(success, failure), EcRemote.getFailureCallback(failure));
+        EcRemote.postInner(server, service, fd, null, EcRemote.getSuccessJSONCallback(success, failure), failure);
     };
     /**
      *  POSTs a request to a remote endpoint. Composed of a server endpoint (root
@@ -726,10 +708,10 @@ EcRemote = stjs.extend(EcRemote, null, [], function(constructor, prototype) {
      *  @static
      */
     constructor.postExpectingString = function(server, service, fd, success, failure) {
-        EcRemote.postInner(server, service, fd, null, EcRemote.getSuccessCallback(success, failure), EcRemote.getFailureCallback(failure));
+        EcRemote.postInner(server, service, fd, null, success, failure);
     };
     constructor.postWithHeadersExpectingString = function(server, service, fd, headers, success, failure) {
-        EcRemote.postInner(server, service, fd, headers, EcRemote.getSuccessCallback(success, failure), EcRemote.getFailureCallback(failure));
+        EcRemote.postInner(server, service, fd, headers, success, failure);
     };
     constructor.postInner = function(server, service, fd, headers, successCallback, failureCallback) {
         var url = server;
@@ -739,9 +721,23 @@ EcRemote = stjs.extend(EcRemote, null, [], function(constructor, prototype) {
         if (service != null) {
             url += service;
         }
-        var p = {};
-        p.method = "POST";
-        p.url = url;
+        url = EcRemote.upgradeHttpToHttps(url);
+        var xhr = null;
+        if ((typeof httpStatus) == "undefined") {
+            xhr = new XMLHttpRequest();
+            xhr.open("POST", url, EcRemote.async);
+            var xhrx = xhr;
+            xhr.onreadystatechange = function() {
+                if (xhrx.readyState == 4 && xhrx.status == 200) {
+                    if (successCallback != null) 
+                        successCallback(xhrx.responseText);
+                } else if (xhrx.readyState == 4) {
+                    if (failureCallback != null) 
+                        failureCallback(xhrx.responseText);
+                }
+            };
+        }
+        var theBoundary = null;
         if ((fd)["_streams"] != null) {
             var chunks = (fd)["_streams"];
             var all = "";
@@ -753,32 +749,20 @@ EcRemote = stjs.extend(EcRemote, null, [], function(constructor, prototype) {
                 }
             }
             all = all + "\r\n\r\n--" + (fd)["_boundary"] + "--";
-            if (headers == null || headers == undefined) 
-                headers = new Object();
-            p.headers = headers;
-            p.headers["Content-Type"] = "multipart/form-data; boundary=" + (fd)["_boundary"];
-            p.data = all;
+            theBoundary = (fd)["_boundary"];
+            if ((typeof httpStatus) == "undefined") 
+                xhr.setRequestHeader("Content-Type", "multipart/form-data; boundary=" + (fd)["_boundary"]);
+            fd = all;
+        } else {}
+        if (xhr != null) 
+            if (EcRemote.async) 
+                (xhr)["timeout"] = EcRemote.timeout;
+        if ((typeof httpStatus) != "undefined") {
+            var result = JSON.stringify(httpPost(fd, url, "multipart/form-data; boundary=" + theBoundary, "false", theBoundary));
+            if (successCallback != null) 
+                successCallback(result);
         } else {
-            p.mimeType = "multipart/form-data";
-            p.data = fd;
-            if (headers != null && headers != undefined) 
-                p.headers = headers;
-        }
-        (p)["contentType"] = false;
-        p.cache = false;
-        p.async = EcRemote.async;
-        p.timeout = EcRemote.timeout;
-        p.processData = false;
-        p.success = successCallback;
-        p.error = failureCallback;
-        EcRemote.upgradeHttpToHttps(p);
-        if ($ == null) {
-            var o = new Object();
-            (o)["status"] = 200;
-            (o)["responseText"] = JSON.stringify(httpPost(p.data, p.url, "multipart/form-data; boundary=" + (fd)["_boundary"], "false", (fd)["_boundary"]));
-            successCallback(null, null, o);
-        } else {
-            $.ajax(p);
+            xhr.send(fd);
         }
     };
     /**
@@ -795,29 +779,7 @@ EcRemote = stjs.extend(EcRemote, null, [], function(constructor, prototype) {
      *  @static
      */
     constructor.getExpectingObject = function(server, service, success, failure) {
-        var url = server;
-        if (!url.endsWith("/") && service != null && service.equals("")) {
-            url += "/";
-        }
-        if (service != null) {
-            url += service;
-        }
-        var p = {};
-        p.method = "GET";
-        p.url = url;
-        p.cache = false;
-        p.async = EcRemote.async;
-        p.timeout = EcRemote.timeout;
-        p.processData = false;
-        p.dataType = "json";
-        p.success = EcRemote.getSuccessJSONCallback(success, failure);
-        p.error = EcRemote.getFailureCallback(failure);
-        EcRemote.upgradeHttpToHttps(p);
-        if ($ == null) {
-            success(httpGet(p.url));
-        } else {
-            $.ajax(p);
-        }
+        EcRemote.getExpectingString(server, service, EcRemote.getSuccessJSONCallback(success, failure), failure);
     };
     /**
      *  GETs something from a remote endpoint. Composed of a server endpoint
@@ -833,6 +795,31 @@ EcRemote = stjs.extend(EcRemote, null, [], function(constructor, prototype) {
      *  @static
      */
     constructor.getExpectingString = function(server, service, success, failure) {
+        var url = EcRemote.urlAppend(server, service);
+        url = EcRemote.upgradeHttpToHttps(url);
+        var xhr = null;
+        if ((typeof httpStatus) == "undefined") {
+            xhr = new XMLHttpRequest();
+            xhr.open("GET", url, EcRemote.async);
+            var xhrx = xhr;
+            xhr.onreadystatechange = function() {
+                if (xhrx.readyState == 4 && xhrx.status == 200) 
+                    success(xhrx.responseText);
+                 else if (xhrx.readyState == 4) 
+                    failure(xhrx.responseText);
+            };
+        }
+        if (xhr != null) {
+            if (EcRemote.async) 
+                (xhr)["timeout"] = EcRemote.timeout;
+        }
+        if ((typeof httpStatus) != "undefined") {
+            success(JSON.stringify(httpGet(url)));
+        } else {
+            xhr.send();
+        }
+    };
+    constructor.urlAppend = function(server, service) {
         var url = server;
         if (!url.endsWith("/") && service != null && service.equals("")) {
             url += "/";
@@ -840,20 +827,7 @@ EcRemote = stjs.extend(EcRemote, null, [], function(constructor, prototype) {
         if (service != null) {
             url += service;
         }
-        var p = {};
-        p.method = "GET";
-        p.url = url;
-        p.async = EcRemote.async;
-        p.timeout = EcRemote.timeout;
-        p.processData = false;
-        p.success = EcRemote.getSuccessCallback(success, failure);
-        p.error = EcRemote.getFailureCallback(failure);
-        EcRemote.upgradeHttpToHttps(p);
-        if ($ == null) {
-            success(httpGet(p.url));
-        } else {
-            $.ajax(p);
-        }
+        return url;
     };
     /**
      *  DELETEs something at a remote endpoint. Composed of a server endpoint
@@ -869,150 +843,71 @@ EcRemote = stjs.extend(EcRemote, null, [], function(constructor, prototype) {
      *  @static
      */
     constructor._delete = function(url, signatureSheet, success, failure) {
-        var p = {};
-        p.method = "DELETE";
-        p.url = url;
-        p.async = EcRemote.async;
-        p.timeout = EcRemote.timeout;
-        p.headers = new Object();
-        p.headers["signatureSheet"] = signatureSheet;
-        p.success = EcRemote.getSuccessCallback(success, failure);
-        p.error = EcRemote.getFailureCallback(failure);
-        EcRemote.upgradeHttpToHttps(p);
-        if ($ == null) {
-            success(httpDelete(p.url));
+        url = EcRemote.upgradeHttpToHttps(url);
+        var xhr = null;
+        if ((typeof httpStatus) == "undefined") {
+            xhr = new XMLHttpRequest();
+            xhr.open("DELETE", url, EcRemote.async);
+            var xhrx = xhr;
+            xhr.onreadystatechange = function() {
+                if (xhrx.readyState == 4 && xhrx.status == 200) {
+                    if (success != null) 
+                        success(xhrx.responseText);
+                } else if (xhrx.readyState == 4) {
+                    if (failure != null) 
+                        failure(xhrx.responseText);
+                }
+            };
+        }
+        if (xhr != null) {
+            if (EcRemote.async) 
+                (xhr)["timeout"] = EcRemote.timeout;
+            xhr.setRequestHeader("signatureSheet", signatureSheet);
+        }
+        if ((typeof httpStatus) != "undefined") {
+            if (success != null) {
+                var sso = new Object();
+                (sso)["signatureSheet"] = signatureSheet;
+                success(httpDelete(url, null, null, null, sso));
+            }
         } else {
-            $.ajax(p);
+            xhr.send();
         }
     };
-    constructor.upgradeHttpToHttps = function(p) {
+    constructor.upgradeHttpToHttps = function(url) {
         if (window != null) {
             if (window.location != null) {
-                if (p.url.indexOf(window.location.protocol) == -1) {
+                if (url.indexOf(window.location.protocol) == -1) {
                     if (window.location.protocol.startsWith("https")) {
-                        if (!p.url.startsWith("https:")) {
-                            p.url = p.url.replace("http:", "https:");
+                        if (!url.startsWith("https:")) {
+                            url = url.replace("http:", "https:");
                         }
                     }
                 }
             }
         }
-    };
-    constructor.handleFailure = function(failure, paramP1, paramP2, paramP3) {
-        if (failure != null) {
-            if (paramP1 != null) {
-                if (paramP1.responseText != null) {
-                    failure(paramP1.responseText);
-                } else if (paramP1.statusText != null) {
-                    failure(paramP1.statusText.toString());
-                } else {
-                    failure("General error in AJAX request.");
-                }
-            } else if (paramP2 != null) {
-                failure(paramP2);
-            } else if (paramP3 != null) {
-                failure(paramP3);
-            } else {
-                failure("General error in AJAX request.");
-            }
-        }
-    };
-    constructor.getSuccessCallback = function(success, failure) {
-        return function(arg0, arg1, arg2) {
-            if (arg2.status > 300 || arg2.status < 200) {
-                if (failure != null) 
-                    failure("Error with code: " + arg2.status);
-            } else if (success != null) {
-                success(arg2.responseText);
-            }
-        };
+        return url;
     };
     constructor.getSuccessJSONCallback = function(success, failure) {
-        return function(arg0, arg1, arg2) {
-            if (arg2.status > 300 || arg2.status < 200) {
-                if (failure != null) 
-                    failure("Error with code: " + arg2.status);
-            } else if (success != null) {
-                try {
-                    if (EcObject.isObject(arg2.responseText)) 
-                        success(arg2.responseText);
-                     else if (EcArray.isArray(arg2.responseText)) 
-                        success(arg2.responseText);
-                     else 
-                        success(JSON.parse(arg2.responseText));
-                }catch (ex) {
-                    if (ex != null) {
-                        if (failure != null) 
-                            if ((ex)["getMessage"] != null) {
-                                failure(ex.getMessage());
-                            } else {
-                                failure(ex);
-                            }
-                    }
-                }
+        return function(s) {
+            var o;
+            try {
+                o = JSON.parse(s);
+            }catch (ex) {
+                if (ex == null) 
+                    failure("An unspecified error occurred during a network request.");
+                 else 
+                    failure(ex);
+                return;
             }
-        };
-    };
-    constructor.getFailureCallback = function(failure) {
-        return function(paramP1, paramP2, paramP3) {
-            EcRemote.handleFailure(failure, paramP1, paramP2, paramP3);
+            success(o);
         };
     };
 }, {}, {});
-/**
- *  Pattern (probably similar to Promise) that provides fine grained control over asynchronous execution.
- *  Will iterate over all items in an array and perform 'each(item,callback)'.
- *  Every 'each' needs to call the callback. This callback can be passed down through several asynchronous calls.
- *  When all callbacks have been called, 'after(array)' is called.
- * 
- *  @author fritz.ray@eduworks.com
- *  @module com.eduworks.ec
- *  @class EcAsyncHelper
- */
-var EcAsyncHelper = function() {};
-EcAsyncHelper = stjs.extend(EcAsyncHelper, null, [], function(constructor, prototype) {
-    constructor.scriptPath = null;
-    /**
-     *  Counter that counts down when each callback is called. Lots of tricks can be done to cause after to proc in different ways.
-     * 
-     *  @property counter
-     *  @type integer
-     */
-    prototype.counter = null;
-    /**
-     *  "Each" method. See class description.
-     * 
-     *  @param {Array}                   array Array to iterate over.
-     *  @param {function(item,callback)} each Method that gets invoked per item in the array.
-     *  @param {function(array)}         after Method invoked when all callbacks are called.
-     *  @method each
-     */
-    prototype.each = function(array, each, after) {
-        var me = this;
-        this.counter = array.length;
-        if (array.length == 0) 
-            after(array);
-        for (var i = 0; i < array.length; i++) {
-            if (this.counter > 0) 
-                this.execute(array, each, after, me, i);
-        }
-    };
-    prototype.execute = function(array, each, after, me, i) {
-        Task.immediate(function() {
-            each(array[i], function() {
-                me.counter--;
-                if (me.counter == 0) 
-                    after(array);
-            });
-        });
-    };
-    /**
-     *  Will prevent 'after' from being called.
-     * 
-     *  @method stop
-     */
-    prototype.stop = function() {
-        this.counter = -1;
+var EcDate = function() {};
+EcDate = stjs.extend(EcDate, null, [], function(constructor, prototype) {
+    constructor.toISOString = function(obj) {
+        return ((obj)["toISOString"])();
     };
 }, {}, {});
 /**
@@ -1239,6 +1134,55 @@ Graph = stjs.extend(Graph, null, [Hypergraph], function(constructor, prototype) 
     prototype.getOpposite = function(vertex, edge) {};
 }, {}, {});
 /**
+ *  Created by fray on 7/5/17.
+ */
+var Task = function() {};
+Task = stjs.extend(Task, null, [], function(constructor, prototype) {
+    constructor.desiredFps = 10;
+    constructor.lastFrame = null;
+    constructor.tasks = new Array();
+    constructor.delayedFunctions = 0;
+    constructor.immediateFunctions = 0;
+    constructor.asyncImmediateFunctions = 0;
+    constructor.runningAsyncFunctions = 0;
+    constructor.immediate = function(c) {
+        var currentMs = Date.now();
+        var nextFrameMs = stjs.trunc(1000 / Task.desiredFps);
+        if (EcRemote.async == true && (Task.lastFrame == null || currentMs > Task.lastFrame + nextFrameMs)) 
+            return setTimeout(function() {
+                Task.delayedFunctions++;
+                Task.lastFrame = Date.now();
+                c();
+            }, 0);
+         else {
+            Task.immediateFunctions++;
+            c();
+        }
+        return null;
+    };
+    constructor.asyncImmediate = function(c) {
+        Task.tasks.push(c);
+        Task.asyncImmediateFunctions++;
+        if (Task.runningAsyncFunctions < 20) {
+            Task.runningAsyncFunctions++;
+            return setTimeout(function() {
+                Task.asyncContinue();
+            }, 0);
+        }
+        return null;
+    };
+    constructor.asyncContinue = function() {
+        var keepGoing = function() {
+            Task.asyncContinue();
+        };
+        if (Task.tasks.length > 0) {
+            var c = Task.tasks.pop();
+            c(keepGoing);
+        } else 
+            Task.runningAsyncFunctions--;
+    };
+}, {tasks: {name: "Array", arguments: ["CallbackOrFunction"]}}, {});
+/**
  *  A directed implementation of {{#crossLink "Graph"}}Graph{{/crossLink}}. Edges have types. Two vertices may have many edges between them.
  * 
  *  @param <V>
@@ -1266,13 +1210,13 @@ EcDirectedGraph = stjs.extend(EcDirectedGraph, null, [Graph], function(construct
     };
     prototype.containsVertex = function(vertex) {
         for (var i = 0; i < this.verticies.length; i++) 
-            if (vertex.equals(this.verticies[i])) 
+            if (vertex == this.verticies[i]) 
                 return true;
         return false;
     };
     prototype.containsEdge = function(edge) {
         for (var i = 0; i < this.edges.length; i++) 
-            if (edge.equals(this.edges[i].edge)) 
+            if (edge == this.edges[i].edge) 
                 return true;
         return false;
     };
@@ -1285,9 +1229,9 @@ EcDirectedGraph = stjs.extend(EcDirectedGraph, null, [Graph], function(construct
     prototype.getNeighbors = function(vertex) {
         var results = new Array();
         for (var i = 0; i < this.edges.length; i++) {
-            if (vertex.equals(this.edges[i].source)) 
+            if (vertex == this.edges[i].source) 
                 results.push(this.edges[i].destination);
-             else if (vertex.equals(this.edges[i].destination)) 
+             else if (vertex == this.edges[i].destination) 
                 results.push(this.edges[i].source);
         }
         EcArray.removeDuplicates(results);
@@ -1296,9 +1240,9 @@ EcDirectedGraph = stjs.extend(EcDirectedGraph, null, [Graph], function(construct
     prototype.getIncidentEdges = function(vertex) {
         var results = new Array();
         for (var i = 0; i < this.edges.length; i++) {
-            if (vertex.equals(this.edges[i].source)) 
+            if (vertex == this.edges[i].source) 
                 results.push(this.edges[i].edge);
-             else if (vertex.equals(this.edges[i].destination)) 
+             else if (vertex == this.edges[i].destination) 
                 results.push(this.edges[i].edge);
         }
         EcArray.removeDuplicates(results);
@@ -1307,7 +1251,7 @@ EcDirectedGraph = stjs.extend(EcDirectedGraph, null, [Graph], function(construct
     prototype.getIncidentVertices = function(edge) {
         var results = new Array();
         for (var i = 0; i < this.edges.length; i++) {
-            if (edge.equals(this.edges[i].edge)) {
+            if (edge == this.edges[i].edge) {
                 results.push(this.edges[i].source);
                 results.push(this.edges[i].destination);
             }
@@ -1317,9 +1261,9 @@ EcDirectedGraph = stjs.extend(EcDirectedGraph, null, [Graph], function(construct
     };
     prototype.findEdge = function(v1, v2) {
         for (var i = 0; i < this.edges.length; i++) {
-            if (v1.equals(this.edges[i].source) && v2.equals(this.edges[i].destination)) 
+            if (v1 == this.edges[i].source && v2 == this.edges[i].destination) 
                 return this.edges[i].edge;
-            if (v1.equals(this.edges[i].destination) && v2.equals(this.edges[i].source)) 
+            if (v1 == this.edges[i].destination && v2 == this.edges[i].source) 
                 return this.edges[i].edge;
         }
         return null;
@@ -1327,9 +1271,9 @@ EcDirectedGraph = stjs.extend(EcDirectedGraph, null, [Graph], function(construct
     prototype.findEdgeSet = function(v1, v2) {
         var results = new Array();
         for (var i = 0; i < this.edges.length; i++) {
-            if (v1.equals(this.edges[i].source) && v2.equals(this.edges[i].destination)) 
+            if (v1 == this.edges[i].source && v2 == this.edges[i].destination) 
                 results.push(this.edges[i].edge);
-            if (v1.equals(this.edges[i].destination) && v2.equals(this.edges[i].source)) 
+            if (v1 == this.edges[i].destination && v2 == this.edges[i].source) 
                 results.push(this.edges[i].edge);
         }
         return results;
@@ -1344,7 +1288,7 @@ EcDirectedGraph = stjs.extend(EcDirectedGraph, null, [Graph], function(construct
         var indexOf = this.verticies.indexOf(vertex);
         if (indexOf != -1) {
             for (var i = 0; i < this.edges.length; i++) {
-                if (this.edges[i].source.equals(vertex) || this.edges[i].destination.equals(vertex)) {
+                if (this.edges[i].source == vertex || this.edges[i].destination == vertex) {
                     this.edges.splice(i, 1);
                     i--;
                 }
@@ -1357,7 +1301,7 @@ EcDirectedGraph = stjs.extend(EcDirectedGraph, null, [Graph], function(construct
     prototype.removeEdge = function(edge) {
         var success = false;
         for (var i = 0; i < this.edges.length; i++) {
-            if (this.edges[i].edge.equals(edge)) {
+            if (this.edges[i].edge == edge) {
                 this.edges.splice(i, 1);
                 i--;
                 success = true;
@@ -1367,16 +1311,16 @@ EcDirectedGraph = stjs.extend(EcDirectedGraph, null, [Graph], function(construct
     };
     prototype.isNeighbor = function(v1, v2) {
         for (var i = 0; i < this.edges.length; i++) {
-            if (v1.equals(this.edges[i].source) && v2.equals(this.edges[i].destination)) 
+            if (v1 == this.edges[i].source && v2 == this.edges[i].destination) 
                 return true;
-             else if (v1.equals(this.edges[i].destination) && v2.equals(this.edges[i].source)) 
+             else if (v1 == this.edges[i].destination && v2 == this.edges[i].source) 
                 return true;
         }
         return false;
     };
     prototype.isIncident = function(vertex, edge) {
         for (var i = 0; i < this.edges.length; i++) {
-            if ((vertex.equals(this.edges[i].source) || vertex.equals(this.edges[i].destination)) && edge.equals(this.edges[i].edge)) 
+            if ((vertex == this.edges[i].source || vertex == this.edges[i].destination) && edge == this.edges[i].edge) 
                 return true;
         }
         return false;
@@ -1384,7 +1328,7 @@ EcDirectedGraph = stjs.extend(EcDirectedGraph, null, [Graph], function(construct
     prototype.degree = function(vertex) {
         var count = 0;
         for (var i = 0; i < this.edges.length; i++) {
-            if (vertex.equals(this.edges[i].source) || vertex.equals(this.edges[i].destination)) 
+            if (vertex == this.edges[i].source || vertex == this.edges[i].destination) 
                 count++;
         }
         return count;
@@ -1411,7 +1355,7 @@ EcDirectedGraph = stjs.extend(EcDirectedGraph, null, [Graph], function(construct
     prototype.getInEdges = function(vertex) {
         var results = new Array();
         for (var i = 0; i < this.edges.length; i++) {
-            if (vertex.equals(this.edges[i].destination)) 
+            if (vertex == this.edges[i].destination) 
                 results.push(this.edges[i].edge);
         }
         EcArray.removeDuplicates(results);
@@ -1420,7 +1364,7 @@ EcDirectedGraph = stjs.extend(EcDirectedGraph, null, [Graph], function(construct
     prototype.getOutEdges = function(vertex) {
         var results = new Array();
         for (var i = 0; i < this.edges.length; i++) {
-            if (vertex.equals(this.edges[i].source)) 
+            if (vertex == this.edges[i].source) 
                 results.push(this.edges[i].edge);
         }
         EcArray.removeDuplicates(results);
@@ -1434,14 +1378,14 @@ EcDirectedGraph = stjs.extend(EcDirectedGraph, null, [Graph], function(construct
     };
     prototype.getSource = function(directed_edge) {
         for (var i = 0; i < this.edges.length; i++) {
-            if (directed_edge.equals(this.edges[i].edge)) 
+            if (directed_edge == this.edges[i].edge) 
                 return this.edges[i].source;
         }
         return null;
     };
     prototype.getDest = function(directed_edge) {
         for (var i = 0; i < this.edges.length; i++) {
-            if (directed_edge.equals(this.edges[i].edge)) 
+            if (directed_edge == this.edges[i].edge) 
                 return this.edges[i].destination;
         }
         return null;
@@ -1449,7 +1393,7 @@ EcDirectedGraph = stjs.extend(EcDirectedGraph, null, [Graph], function(construct
     prototype.getPredecessors = function(vertex) {
         var results = new Array();
         for (var i = 0; i < this.edges.length; i++) {
-            if (vertex.equals(this.edges[i].destination)) 
+            if (vertex == this.edges[i].destination) 
                 results.push(this.edges[i].source);
         }
         EcArray.removeDuplicates(results);
@@ -1458,7 +1402,7 @@ EcDirectedGraph = stjs.extend(EcDirectedGraph, null, [Graph], function(construct
     prototype.getSuccessors = function(vertex) {
         var results = new Array();
         for (var i = 0; i < this.edges.length; i++) {
-            if (vertex.equals(this.edges[i].source)) 
+            if (vertex == this.edges[i].source) 
                 results.push(this.edges[i].destination);
         }
         EcArray.removeDuplicates(results);
@@ -1466,16 +1410,16 @@ EcDirectedGraph = stjs.extend(EcDirectedGraph, null, [Graph], function(construct
     };
     prototype.isPredecessor = function(v1, v2) {
         for (var i = 0; i < this.edges.length; i++) {
-            if (v1.equals(this.edges[i].destination)) 
-                if (v2.equals(this.edges[i].source)) 
+            if (v1 == this.edges[i].destination) 
+                if (v2 == this.edges[i].source) 
                     return true;
         }
         return false;
     };
     prototype.isSuccessor = function(v1, v2) {
         for (var i = 0; i < this.edges.length; i++) {
-            if (v2.equals(this.edges[i].destination)) 
-                if (v1.equals(this.edges[i].source)) 
+            if (v2 == this.edges[i].destination) 
+                if (v1 == this.edges[i].source) 
                     return true;
         }
         return false;
@@ -1488,16 +1432,16 @@ EcDirectedGraph = stjs.extend(EcDirectedGraph, null, [Graph], function(construct
     };
     prototype.isSource = function(vertex, edge) {
         for (var i = 0; i < this.edges.length; i++) {
-            if (edge.equals(this.edges[i].edge)) 
-                if (vertex.equals(this.edges[i].source)) 
+            if (edge == this.edges[i].edge) 
+                if (vertex == this.edges[i].source) 
                     return true;
         }
         return false;
     };
     prototype.isDest = function(vertex, edge) {
         for (var i = 0; i < this.edges.length; i++) {
-            if (edge.equals(this.edges[i].edge)) 
-                if (vertex.equals(this.edges[i].destination)) 
+            if (edge == this.edges[i].edge) 
+                if (vertex == this.edges[i].destination) 
                     return true;
         }
         return false;
@@ -1516,12 +1460,68 @@ EcDirectedGraph = stjs.extend(EcDirectedGraph, null, [Graph], function(construct
     };
     prototype.getOpposite = function(vertex, edge) {
         for (var i = 0; i < this.edges.length; i++) {
-            if (edge.equals(this.edges[i].edge)) 
-                if (vertex.equals(this.edges[i].destination)) 
+            if (edge == this.edges[i].edge) 
+                if (vertex == this.edges[i].destination) 
                     return this.edges[i].source;
-                 else if (vertex.equals(this.edges[i].source)) 
+                 else if (vertex == this.edges[i].source) 
                     return this.edges[i].destination;
         }
         return null;
     };
 }, {edges: {name: "Array", arguments: [{name: "Triple", arguments: ["V", "V", "E"]}]}, verticies: {name: "Array", arguments: ["V"]}}, {});
+/**
+ *  Pattern (probably similar to Promise) that provides fine grained control over asynchronous execution.
+ *  Will iterate over all items in an array and perform 'each(item,callback)'.
+ *  Every 'each' needs to call the callback. This callback can be passed down through several asynchronous calls.
+ *  When all callbacks have been called, 'after(array)' is called.
+ * 
+ *  @author fritz.ray@eduworks.com
+ *  @module com.eduworks.ec
+ *  @class EcAsyncHelper
+ */
+var EcAsyncHelper = function() {};
+EcAsyncHelper = stjs.extend(EcAsyncHelper, null, [], function(constructor, prototype) {
+    constructor.scriptPath = null;
+    /**
+     *  Counter that counts down when each callback is called. Lots of tricks can be done to cause after to proc in different ways.
+     * 
+     *  @property counter
+     *  @type integer
+     */
+    prototype.counter = null;
+    /**
+     *  "Each" method. See class description.
+     * 
+     *  @param {Array}                   array Array to iterate over.
+     *  @param {function(item,callback)} each Method that gets invoked per item in the array.
+     *  @param {function(array)}         after Method invoked when all callbacks are called.
+     *  @method each
+     */
+    prototype.each = function(array, each, after) {
+        var me = this;
+        this.counter = array.length;
+        if (array.length == 0) 
+            after(array);
+        for (var i = 0; i < array.length; i++) {
+            if (this.counter > 0) 
+                this.execute(array, each, after, me, i);
+        }
+    };
+    prototype.execute = function(array, each, after, me, i) {
+        Task.immediate(function() {
+            each(array[i], function() {
+                me.counter--;
+                if (me.counter == 0) 
+                    after(array);
+            });
+        });
+    };
+    /**
+     *  Will prevent 'after' from being called.
+     * 
+     *  @method stop
+     */
+    prototype.stop = function() {
+        this.counter = -1;
+    };
+}, {}, {});

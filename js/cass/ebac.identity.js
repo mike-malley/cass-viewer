@@ -8,8 +8,8 @@ RemoteIdentityManagerInterface = stjs.extend(RemoteIdentityManagerInterface, nul
     prototype.startLogin = function(username, password) {};
     prototype.changePassword = function(username, oldPassword, newPassword) {};
     prototype.fetch = function(success, failure) {};
-    prototype.commit = function(success, failure, padGenerationCallback) {};
-    prototype.create = function(success, failure, padGenerationCallback) {};
+    prototype.commit = function(success, failure) {};
+    prototype.create = function(success, failure) {};
 }, {}, {});
 /**
  *  A contact is an identity that we do not own. Using the public key we may: 1.
@@ -82,8 +82,13 @@ EcContact = stjs.extend(EcContact, null, [], function(constructor, prototype) {
      *  @method equals
      */
     prototype.equals = function(obj) {
-        if (stjs.isInstanceOf(obj.constructor, EcContact)) 
-            return this.pk.equals((obj).pk);
+        if (stjs.isInstanceOf(obj.constructor, EcContact)) {
+            if (this.pk == null) 
+                return false;
+            if ((obj).pk == null) 
+                return false;
+            return this.pk.toPem().equals((obj).pk.toPem());
+        }
         return Object.prototype.equals.call(this, obj);
     };
     /**
@@ -183,8 +188,13 @@ EcIdentity = stjs.extend(EcIdentity, null, [], function(constructor, prototype) 
         return i;
     };
     prototype.equals = function(obj) {
-        if (stjs.isInstanceOf(obj.constructor, EcIdentity)) 
+        if (stjs.isInstanceOf(obj.constructor, EcIdentity)) {
+            if (this.ppk == null) 
+                return false;
+            if ((obj).ppk == null) 
+                return false;
             return this.ppk.toPem().equals((obj).ppk.toPem());
+        }
         return Object.prototype.equals.call(this, obj);
     };
     /**
@@ -564,7 +574,7 @@ EcIdentityManager = stjs.extend(EcIdentityManager, null, [], function(constructo
      *  @method signatureSheetForAsync
      *  @static
      */
-    constructor.signatureSheetForAsync = function(identityPksinPem, duration, server, success) {
+    constructor.signatureSheetForAsync = function(identityPksinPem, duration, server, success, failure) {
         var signatures = new Array();
         new EcAsyncHelper().each(EcIdentityManager.ids, function(p1, incrementalSuccess) {
             var ppk = p1.ppk;
@@ -578,7 +588,7 @@ EcIdentityManager = stjs.extend(EcIdentityManager, null, [], function(constructo
                         EcIdentityManager.createSignatureAsync(duration, server, ppk, function(p1) {
                             signatures.push(p1.atIfy());
                             incrementalSuccess();
-                        });
+                        }, failure);
                     }
                 }
             }
@@ -638,7 +648,7 @@ EcIdentityManager = stjs.extend(EcIdentityManager, null, [], function(constructo
      *  @method signatureSheetAsync
      *  @static
      */
-    constructor.signatureSheetAsync = function(duration, server, success) {
+    constructor.signatureSheetAsync = function(duration, server, success, failure) {
         if (!EcIdentityManager.async) {
             var sheet = EcIdentityManager.signatureSheet(duration, server);
             if (success != null) 
@@ -663,7 +673,7 @@ EcIdentityManager = stjs.extend(EcIdentityManager, null, [], function(constructo
             EcIdentityManager.createSignatureAsync(finalDuration, server, ppk, function(p1) {
                 signatures.push(p1.atIfy());
                 incrementalSuccess();
-            });
+            }, failure);
         }, function(pks) {
             var cache = null;
             var stringified = JSON.stringify(signatures);
@@ -710,7 +720,7 @@ EcIdentityManager = stjs.extend(EcIdentityManager, null, [], function(constructo
      *  @method createSignatureAsync
      *  @static
      */
-    constructor.createSignatureAsync = function(duration, server, ppk, success) {
+    constructor.createSignatureAsync = function(duration, server, ppk, success, failure) {
         var s = new EbacSignature();
         s.owner = ppk.toPk().toPem();
         s.expiry = new Date().getTime() + duration;
@@ -718,7 +728,7 @@ EcIdentityManager = stjs.extend(EcIdentityManager, null, [], function(constructo
         EcRsaOaepAsync.sign(ppk, s.toJson(), function(p1) {
             s.signature = p1;
             success(s);
-        }, null);
+        }, failure);
     };
     /**
      *  Get PPK from PK (if we have it)
@@ -798,7 +808,7 @@ EcIdentityManager = stjs.extend(EcIdentityManager, null, [], function(constructo
                     }
                 }
                 if (!works) {
-                    d.signature.splice(i);
+                    d.signature.splice(i, 1);
                 } else {
                     i++;
                 }
@@ -827,6 +837,14 @@ EcIdentityManager = stjs.extend(EcIdentityManager, null, [], function(constructo
             searchString += "@owner:\"" + EcIdentityManager.ids[i].ppk.toPk().toPem() + "\"";
         }
         return searchString;
+    };
+    constructor.getMyPks = function() {
+        var pks = new Array();
+        if (EcIdentityManager.ids == null) 
+            return pks;
+        for (var i = 0; i < EcIdentityManager.ids.length; i++) 
+            pks.push(EcIdentityManager.ids[i].ppk.toPk());
+        return pks;
     };
 }, {ids: {name: "Array", arguments: ["EcIdentity"]}, contacts: {name: "Array", arguments: ["EcContact"]}, onIdentityChanged: {name: "Callback1", arguments: ["EcIdentity"]}, onContactChanged: {name: "Callback1", arguments: ["EcContact"]}, signatureSheetCache: "Object"}, {});
 if (!stjs.mainCallDisabled) 
@@ -921,6 +939,7 @@ OAuth2FileBasedRemoteIdentityManager = stjs.extend(OAuth2FileBasedRemoteIdentity
     prototype.fetch = function(success, failure) {
         var o = new Object();
         (o)["scope"] = (this.configuration)[this.server + "Scope"];
+        (o)["display"] = "page";
         var me = this;
         hello.on("auth.login", function(o) {
             me.oauthLoginResponse = o;
@@ -1082,11 +1101,10 @@ OAuth2FileBasedRemoteIdentityManager = stjs.extend(OAuth2FileBasedRemoteIdentity
      * 
      *  @param {Callback1<String>}   success
      *  @param {Callback1<String>}   failure
-     *  @param padGenerationCallback
      *  @memberOf OAuth2FileBasedRemoteIdentityManager
      *  @method commit
      */
-    prototype.commit = function(success, failure, padGenerationCallback) {
+    prototype.commit = function(success, failure) {
         var me = this;
         var apio = new Object();
         (apio)["network"] = this.network;
@@ -1108,7 +1126,7 @@ OAuth2FileBasedRemoteIdentityManager = stjs.extend(OAuth2FileBasedRemoteIdentity
          else 
             failure("Please login again.");
     };
-    prototype.create = function(success, failure, padGenerationCallback) {
+    prototype.create = function(success, failure) {
         var o = new Object();
         (o)["scope"] = (this.configuration)[this.server + "Scope"];
         var me = this;
@@ -1393,12 +1411,12 @@ EcRemoteIdentityManager = stjs.extend(EcRemoteIdentityManager, null, [RemoteIden
      */
     prototype.changePassword = function(username, oldPassword, newPassword) {
         var usernameHash = forge.util.encode64(forge.pkcs5.pbkdf2(username, this.usernameSalt, this.usernameIterations, this.usernameWidth));
-        if (!this.usernameWithSalt.equals(usernameHash)) {
+        if (this.usernameWithSalt != usernameHash) {
             alert("Username does not match. Aborting password change.");
             return false;
         }
         var oldPasswordHash = forge.util.encode64(forge.pkcs5.pbkdf2(oldPassword, this.passwordSalt, this.passwordIterations, this.passwordWidth));
-        if (!this.passwordWithSalt.equals(oldPasswordHash)) {
+        if (this.passwordWithSalt != oldPasswordHash) {
             alert("Old password does not match. Aborting password change.");
             return false;
         }
@@ -1465,13 +1483,12 @@ EcRemoteIdentityManager = stjs.extend(EcRemoteIdentityManager, null, [RemoteIden
      * 
      *  @param {Callback1<String>}   success
      *  @param {Callback1<String>}   failure
-     *  @param padGenerationCallback
      *  @memberOf EcRemoteIdentityManager
      *  @method commit
      */
-    prototype.commit = function(success, failure, padGenerationCallback) {
+    prototype.commit = function(success, failure) {
         var service = "sky/id/commit";
-        this.sendCredentials(success, failure, padGenerationCallback, service);
+        this.sendCredentials(success, failure, service);
     };
     /**
      *  Creates an account.
@@ -1487,13 +1504,12 @@ EcRemoteIdentityManager = stjs.extend(EcRemoteIdentityManager, null, [RemoteIden
      *                               Callback triggered after successfully creating an account
      *  @param {Callback1<String>}   failure
      *                               Callback triggered if error creating an account
-     *  @param padGenerationCallback Callback triggered if pad not specified
      *  @memberOf EcRemoteIdentityManager
      *  @method create
      */
-    prototype.create = function(success, failure, padGenerationCallback) {
+    prototype.create = function(success, failure) {
         var service = "sky/id/create";
-        this.sendCredentials(success, failure, padGenerationCallback, service);
+        this.sendCredentials(success, failure, service);
     };
     /**
      *  Sends the identity managers credentials to the service specified
@@ -1502,12 +1518,11 @@ EcRemoteIdentityManager = stjs.extend(EcRemoteIdentityManager, null, [RemoteIden
      *                               Callback triggered if credentials sent successfully
      *  @param {Callback1<String>}   failure
      *                               Callback triggered if error sending credentials
-     *  @param padGenerationCallback Callback triggered if pad needed
      *  @param service               Service to send credentials to on server
      *  @memberOf EcRemoteIdentityManager
      *  @method sendCredentials
      */
-    prototype.sendCredentials = function(success, failure, padGenerationCallback, service) {
+    prototype.sendCredentials = function(success, failure, service) {
         if (!this.configured) 
             alert("Remote Identity not configured.");
         if (this.usernameWithSalt == null || this.passwordWithSalt == null || this.secretWithSalt == null) {
@@ -1516,18 +1531,16 @@ EcRemoteIdentityManager = stjs.extend(EcRemoteIdentityManager, null, [RemoteIden
         }
         var credentials = new Array();
         var contacts = new Array();
-        if (this.pad == null && padGenerationCallback != null) 
-            this.pad = padGenerationCallback();
         for (var i = 0; i < EcIdentityManager.ids.length; i++) {
             var id = EcIdentityManager.ids[i];
-            if (id.source != null && id.source.equals(this.server) == false) 
+            if (id.source != null && id.source != this.server) 
                 continue;
             id.source = this.server;
             credentials.push(id.toCredential(this.secretWithSalt));
         }
         for (var i = 0; i < EcIdentityManager.contacts.length; i++) {
             var id = EcIdentityManager.contacts[i];
-            if (id.source != null && id.source.equals(this.server) == false) 
+            if (id.source != null && id.source != this.server) 
                 continue;
             id.source = this.server;
             contacts.push(id.toEncryptedContact(this.secretWithSalt));
@@ -1549,7 +1562,7 @@ EcRemoteIdentityManager = stjs.extend(EcRemoteIdentityManager, null, [RemoteIden
             }, function(arg0) {
                 failure(arg0);
             });
-        });
+        }, failure);
     };
     /**
      *  Splices together passwords (in a fashion more like shuffling a deck of

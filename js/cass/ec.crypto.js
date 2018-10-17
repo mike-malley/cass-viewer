@@ -1,3 +1,16 @@
+/**
+ *  @author Fritz
+ */
+var EcCrypto = function() {};
+EcCrypto = stjs.extend(EcCrypto, null, [], function(constructor, prototype) {
+    constructor.caching = false;
+    constructor.decryptionCache = new Object();
+    constructor.md5 = function(s) {
+        var m = forge.md.md5.create();
+        m.update(s);
+        return m.digest().toHex();
+    };
+}, {decryptionCache: "Object"}, {});
 var AlgorithmIdentifier = function() {};
 AlgorithmIdentifier = stjs.extend(AlgorithmIdentifier, null, [], function(constructor, prototype) {
     prototype.name = null;
@@ -8,14 +21,6 @@ AlgorithmIdentifier = stjs.extend(AlgorithmIdentifier, null, [], function(constr
     prototype.iv = null;
     prototype.counter = null;
 }, {iv: "ArrayBuffer", counter: "ArrayBuffer"}, {});
-/**
- *  @author Fritz
- */
-var EcCrypto = function() {};
-EcCrypto = stjs.extend(EcCrypto, null, [], function(constructor, prototype) {
-    constructor.caching = false;
-    constructor.decryptionCache = new Object();
-}, {decryptionCache: "Object"}, {});
 /**
  *  Helper classes for dealing with RSA Public Keys.
  * 
@@ -6893,7 +6898,7 @@ EcRsaOaep = stjs.extend(EcRsaOaep, null, [], function(constructor, prototype) {
      *  @static
      */
     constructor.encrypt = function(pk, plaintext) {
-        if ($ == null) {
+        if ((typeof httpStatus) != "undefined") {
             return rsaEncrypt(plaintext, pk.toPem());
         }
         return forge.util.encode64(pk.pk.encrypt(plaintext, "RSA-OAEP"));
@@ -6917,7 +6922,7 @@ EcRsaOaep = stjs.extend(EcRsaOaep, null, [], function(constructor, prototype) {
             }
         }
         var result;
-        if ($ == null) {
+        if ((typeof httpStatus) != "undefined") {
             result = rsaDecrypt(ciphertext, ppk.toPem());
         } else {
             result = ppk.ppk.decrypt(forge.util.decode64(ciphertext), "RSA-OAEP");
@@ -6939,7 +6944,7 @@ EcRsaOaep = stjs.extend(EcRsaOaep, null, [], function(constructor, prototype) {
      *  @static
      */
     constructor.sign = function(ppk, text) {
-        if ($ == null) {
+        if ((typeof httpStatus) != "undefined") {
             return rsaSign(text, ppk.toPem());
         }
         var s = forge.md.sha1.create();
@@ -6974,7 +6979,7 @@ EcRsaOaep = stjs.extend(EcRsaOaep, null, [], function(constructor, prototype) {
      *  @method verify
      */
     constructor.verify = function(pk, text, signature) {
-        if ($ == null) {
+        if ((typeof httpStatus) != "undefined") {
             return rsaVerify(signature, pk.toPem(), text);
         }
         var s = forge.md.sha1.create();
@@ -7150,7 +7155,7 @@ EcAesCtr = stjs.extend(EcAesCtr, null, [], function(constructor, prototype) {
      *  @static
      */
     constructor.encrypt = function(plaintext, secret, iv) {
-        if ($ == null && forge.util.decode64(secret).length == 16 && forge.util.decode64(iv).length == 16) 
+        if ((typeof httpStatus) != "undefined" && forge.util.decode64(secret).length == 16 && forge.util.decode64(iv).length == 16) 
             return aesEncrypt(plaintext, iv, secret);
         var c = forge.cipher.createCipher("AES-CTR", forge.util.decode64(secret));
         c.start(new EcAesParameters(iv));
@@ -7177,7 +7182,7 @@ EcAesCtr = stjs.extend(EcAesCtr, null, [], function(constructor, prototype) {
             if (cacheGet != null) 
                 return cacheGet;
         }
-        if ($ == null && forge.util.decode64(secret).length == 16 && forge.util.decode64(iv).length == 16) {
+        if ((typeof httpStatus) != "undefined" && forge.util.decode64(secret).length == 16 && forge.util.decode64(iv).length == 16) {
             var result = aesDecrypt(ciphertext, iv, secret);
             if (EcCrypto.caching) 
                 (EcCrypto.decryptionCache)[secret + iv + ciphertext] = result;
@@ -7208,7 +7213,7 @@ EcRsaOaepAsyncWorker = stjs.extend(EcRsaOaepAsyncWorker, null, [], function(cons
     constructor.q1 = null;
     constructor.q2 = null;
     constructor.initWorker = function() {
-        if (window == null && (typeof self).equals("undefined")) {
+        if (window == null && ((typeof self).equals("undefined")) || Worker == undefined || Worker == null) {
             return;
         }
         if (!EcRemote.async) {
@@ -7427,7 +7432,7 @@ EcAesCtrAsyncWorker = stjs.extend(EcAesCtrAsyncWorker, null, [], function(constr
     constructor.q1 = null;
     constructor.q2 = null;
     constructor.initWorker = function() {
-        if (window == null && (typeof self).equals("undefined")) {
+        if (window == null && ((typeof self).equals("undefined")) || Worker == undefined || Worker == null) {
             return;
         }
         if (!EcRemote.async) {
@@ -7553,13 +7558,13 @@ EcRsaOaepAsync = stjs.extend(EcRsaOaepAsync, null, [], function(constructor, pro
             success(EcRsaOaep.encrypt(pk, text));
             return;
         }
-        if (window.crypto.subtle == null) {
+        if (EcBrowserDetection.isIeOrEdge() || window == null || window.crypto == null || window.crypto.subtle == null) {
             EcRsaOaepAsyncWorker.encrypt(pk, text, success, failure);
             return;
         }
         var keyUsages = new Array();
         keyUsages.push("encrypt");
-        var algorithm = new AlgorithmIdentifier();
+        var algorithm = new Object();
         algorithm.name = "RSA-OAEP";
         algorithm.hash = "SHA-1";
         if (pk.key == null) 
@@ -7587,13 +7592,13 @@ EcRsaOaepAsync = stjs.extend(EcRsaOaepAsync, null, [], function(constructor, pro
             success(EcRsaOaep.decrypt(ppk, text));
             return;
         }
-        if (window.crypto.subtle == null) {
+        if (EcBrowserDetection.isIeOrEdge() || window == null || window.crypto == null || window.crypto.subtle == null) {
             EcRsaOaepAsyncWorker.decrypt(ppk, text, success, failure);
             return;
         }
         var keyUsages = new Array();
         keyUsages.push("decrypt");
-        var algorithm = new AlgorithmIdentifier();
+        var algorithm = new Object();
         algorithm.name = "RSA-OAEP";
         algorithm.hash = "SHA-1";
         if (ppk.key == null) 
@@ -7613,13 +7618,13 @@ EcRsaOaepAsync = stjs.extend(EcRsaOaepAsync, null, [], function(constructor, pro
             success(EcRsaOaep.sign(ppk, text));
             return;
         }
-        if (window.crypto.subtle == null) {
+        if (EcBrowserDetection.isIeOrEdge() || window == null || window.crypto == null || window.crypto.subtle == null) {
             EcRsaOaepAsyncWorker.sign(ppk, text, success, failure);
             return;
         }
         var keyUsages = new Array();
         keyUsages.push("sign");
-        var algorithm = new AlgorithmIdentifier();
+        var algorithm = new Object();
         algorithm.name = "RSASSA-PKCS1-v1_5";
         algorithm.hash = "SHA-1";
         if (ppk.signKey == null) 
@@ -7639,13 +7644,13 @@ EcRsaOaepAsync = stjs.extend(EcRsaOaepAsync, null, [], function(constructor, pro
             success(EcRsaOaep.signSha256(ppk, text));
             return;
         }
-        if (window.crypto.subtle == null) {
+        if (EcBrowserDetection.isIeOrEdge() || window == null || window.crypto == null || window.crypto.subtle == null) {
             EcRsaOaepAsyncWorker.sign(ppk, text, success, failure);
             return;
         }
         var keyUsages = new Array();
         keyUsages.push("sign");
-        var algorithm = new AlgorithmIdentifier();
+        var algorithm = new Object();
         algorithm.name = "RSASSA-PKCS1-v1_5";
         algorithm.hash = "SHA-256";
         if (ppk.signKey == null) 
@@ -7665,13 +7670,13 @@ EcRsaOaepAsync = stjs.extend(EcRsaOaepAsync, null, [], function(constructor, pro
             success(EcRsaOaep.verify(pk, text, signature));
             return;
         }
-        if (window.crypto.subtle == null) {
+        if (EcBrowserDetection.isIeOrEdge() || window == null || window.crypto == null || window.crypto.subtle == null) {
             EcRsaOaepAsyncWorker.verify(pk, text, signature, success, failure);
             return;
         }
         var keyUsages = new Array();
         keyUsages.push("verify");
-        var algorithm = new AlgorithmIdentifier();
+        var algorithm = new Object();
         algorithm.name = "RSASSA-PKCS1-v1_5";
         algorithm.hash = "SHA-1";
         if (pk.signKey == null) 
@@ -7689,19 +7694,23 @@ EcRsaOaepAsync = stjs.extend(EcRsaOaepAsync, null, [], function(constructor, pro
 }, {}, {});
 var EcAesCtrAsync = function() {};
 EcAesCtrAsync = stjs.extend(EcAesCtrAsync, null, [], function(constructor, prototype) {
-    constructor.encrypt = function(text, secret, iv, success, failure) {
-        if (window.crypto.subtle == null) {
-            EcAesCtrAsyncWorker.encrypt(text, secret, iv, success, failure);
+    constructor.encrypt = function(plaintext, secret, iv, success, failure) {
+        if (window == null || window.crypto == null || window.crypto.subtle == null) {
+            EcAesCtrAsyncWorker.encrypt(plaintext, secret, iv, success, failure);
+            return;
+        }
+        if (EcRemote.async == false) {
+            success(EcAesCtr.encrypt(plaintext, secret, iv));
             return;
         }
         var keyUsages = new Array();
         keyUsages.push("encrypt", "decrypt");
-        var algorithm = new AlgorithmIdentifier();
+        var algorithm = new Object();
         algorithm.name = "AES-CTR";
         algorithm.counter = base64.decode(iv);
         algorithm.length = 128;
         var data;
-        data = str2ab(text);
+        data = str2ab(plaintext);
         window.crypto.subtle.importKey("raw", base64.decode(secret), algorithm, false, keyUsages).then(function(key) {
             var p = window.crypto.subtle.encrypt(algorithm, key, data);
             p.then(function(p1) {
@@ -7709,26 +7718,29 @@ EcAesCtrAsync = stjs.extend(EcAesCtrAsync, null, [], function(constructor, proto
             }, failure);
         }, failure);
     };
-    constructor.decrypt = function(text, secret, iv, success, failure) {
+    constructor.decrypt = function(ciphertext, secret, iv, success, failure) {
         if (EcCrypto.caching) {
-            var cacheGet = (EcCrypto.decryptionCache)[secret + iv + text];
+            var cacheGet = (EcCrypto.decryptionCache)[secret + iv + ciphertext];
             if (cacheGet != null) {
                 success(cacheGet);
                 return;
             }
         }
-        if (window.crypto.subtle == null) {
-            EcAesCtrAsyncWorker.decrypt(text, secret, iv, success, failure);
+        if (window.crypto == null || window.crypto.subtle == null) {
+            EcAesCtrAsyncWorker.decrypt(ciphertext, secret, iv, success, failure);
             return;
+        }
+        if (EcRemote.async == false) {
+            success(EcAesCtr.decrypt(ciphertext, secret, iv));
         }
         var keyUsages = new Array();
         keyUsages.push("encrypt", "decrypt");
-        var algorithm = new AlgorithmIdentifier();
+        var algorithm = new Object();
         algorithm.name = "AES-CTR";
         algorithm.counter = base64.decode(iv);
         algorithm.length = 128;
         var data;
-        data = base64.decode(text);
+        data = base64.decode(ciphertext);
         window.crypto.subtle.importKey("raw", base64.decode(secret), algorithm, false, keyUsages).then(function(key) {
             var p = window.crypto.subtle.decrypt(algorithm, key, data);
             p.then(function(p1) {
