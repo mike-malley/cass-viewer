@@ -205,16 +205,16 @@ function zoomExpCg(d) {
         });
     transition.selectAll("text")
         .filter(function (d) {
-            return d.parent === focus || this.style.display === "inline";
+            return d.parent === focus || this.style.visibility === "visible";
         })
         .style("fill-opacity", function (d) {
             return d.parent === focus ? 1 : 0;
         })
         .on("start", function (d) {
-            if (d.parent === focus) this.style.display = "inline";
+            if (d.parent === focus) this.style.visibility = "visible";
         })
         .on("end", function (d) {
-            if (d.parent !== focus) this.style.display = "none";
+            if (d.parent !== focus) this.style.visibility = "hidden";
         });
 }
 
@@ -246,6 +246,75 @@ function cleanCircleText(str,textLimit) {
 function generateExpCgCircleExtendedClass(compId) {
     if (compId) return buildIDableString(EXP_CIRCLE_CLASS_PREFIX + compId);
     else return null;
+}
+
+/******************************************************************
+ Build presentable array of words, first splice all words in title into separate string array elements, combine small words with smallest neighbor and return.
+ *******************************************************************/
+function getDisplayTitle(d, text) {
+    var text = text;
+    var cleanWords = text.text().replace(/-/g, " - ").replace(/\//g, " / ").replace(/ +/g," ");
+    var wordAttempt = cleanWords.split(/ (?=[A-Za-z-\/])/g);
+    var lastLength = 0;
+    while (wordAttempt.length != lastLength) {
+        var maxLength = 0;
+        lastLength = wordAttempt.length;
+        for (var i = 0; i < wordAttempt.length; i++)
+            maxLength = Math.max(wordAttempt[i].length, maxLength);
+        for (var i = 1; i < wordAttempt.length; i++)
+            if (wordAttempt[i].length <= 2 || wordAttempt[i - 1].length + wordAttempt[i].length < maxLength) {
+                wordAttempt[i - 1] = wordAttempt[i - 1] + " " + wordAttempt[i];
+                wordAttempt.splice(i, 1);
+            }
+    }
+    try {
+        if (wordAttempt.length > 4) {
+            wordAttempt.splice(4, wordAttempt.length - 4);
+            wordAttempt[wordAttempt.length-1] += "...";
+        }
+        return createDisplayTitleSpans(wordAttempt.reverse(), text, d);
+    }catch(ex){
+        console.error(ex);
+        throw ex;
+    }
+}
+
+/******************************************************************
+ Build tspan filled with svg text based on ourput display title
+ array.
+ *******************************************************************/
+function createDisplayTitleSpans(words, text, d) {
+    var word;
+    var line = [];
+    var lineNumber = 0;
+    var lineHeight = .9; // ems
+    var y = 0;
+    var dy = 0;
+    var textY = (words.length * lineHeight)/2;
+    var tspan = text.text(null)
+        .append("tspan")
+        .attr("x", 0)
+        .attr("dy", dy +"em")
+    while (word = words.pop()) {
+        line.push(word);
+        lineNumber++;
+        dy = lineHeight * lineNumber - textY;
+        tspan = text
+            .append("tspan")
+            .attr("x", 0)
+            .attr("y", y)
+            .attr("dy", dy + "em")
+            .text(word);
+    }
+}
+
+function truncCircleText(str,textLimit) {
+    return str;
+}
+
+function cleanCircleText(str,textLimit) {
+    var retStr = str;
+    return retStr;
 }
 
 function buildExpGraphCircles(error, root) {
@@ -347,23 +416,34 @@ function buildExpGraphCircles(error, root) {
         .enter()
         .append("text")
         .attr("class", "label")
+        .attr("r", function(d) {
+            return d.r;
+        })
         .style("fill-opacity", function (d) {
             return d.parent === root ? 1 : 0;
         })
-        .style("display", function (d) {
-            return d.parent === root ? "inline" : "none";
+        .style("visibility", function (d) {
+            return d.parent === root ? "visible" : "hidden";
         })
         .text(function (d) {
             if (typeof getExplorerCgCircleText === 'function') {
-                var circleText = cleanCircleText(getExplorerCgCircleText(d),EXP_CIRCLE_TEXT_LIMIT);
+                var circleText = getExplorerCgCircleText(d);
                 return circleText;
             }
             else return "UNDEFINED getFrameworkExpCgCircleText";
         })
+        .attr("name", function (d) {
+            if (typeof getExplorerCgCircleText === 'function') {
+                var circleText = getExplorerCgCircleText(d);
+                return circleText;
+            }
+            else return "UNDEFINED getFrameworkExpCgCircleText";
+        }).each(function(d) {
+            var text = d3.select(this);
+            getDisplayTitle(d, text);
+        });
 
-    ;
-
-    expCgNode = expCirclePackGraph.selectAll("circle,text");
+    expCgNode = expCirclePackGraph.selectAll("circle,text,wrap");
 
     expSvg
         .style("background", expCgColor(-1))
