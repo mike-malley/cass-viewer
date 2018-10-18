@@ -656,7 +656,7 @@ function showCompetencyGraphSidebarSingleNodePacketDetails(cpt) {
 
 //TODO showCircleGraphSidebarDetails handle multi node packets
 function showCircleGraphSidebarDetails(compId) {
-    hideCirlceSidebarDetails();
+    hideCircleSidebarDetails();
     if (!compId || compId == null) return;
     else if (compId == currentFrameworkName) removeAllGraphViewSummaryHighLighting();
     else {
@@ -837,7 +837,7 @@ function buildFrameworkDisplays() {
     buildExpGraphCircles(null, JSON.parse(currentD3FrameworkNodeString));
     buildGraphProfileSummary();
     buildListView();
-    hideCirlceSidebarDetails();
+    hideCircleSidebarDetails();
     showPageMainContentsContainer();
     fillInFrameworkContentsSearchAutoComplete();
     $(FWK_CONT_SRCH_INPT).val("");

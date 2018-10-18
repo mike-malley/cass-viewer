@@ -42,7 +42,7 @@ function d3CustomNode(nodeName) {
 function addD3Sizing(parentNode) {
     if (!parentNode.children || parentNode.children.length == 0) parentNode.size = 1;
     else {
-        childrenNodes = parentNode.children;
+        var childrenNodes = parentNode.children;
         $(childrenNodes).each(function (i, cn) {
             addD3Sizing(cn);
         })

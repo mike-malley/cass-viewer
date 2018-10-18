@@ -284,7 +284,7 @@ function showCircleSidebarDetails() {
     $(CIR_FCS_DTL_CTR).removeClass("hide");
 }
 
-function hideCirlceSidebarDetails() {
+function hideCircleSidebarDetails() {
     $(CIR_FCS_DTL_CTR).addClass("hide");
 }
 
