@@ -889,15 +889,15 @@ function frameworkCollapsedCorrectly(fnpg) {
 function handleCollapseFrameworkSuccess(frameworkId,fnpg) {
     debugMessage("Framework collapsed:" + frameworkId);
     debugMessage(fnpg);
-    if (!frameworkCollapsedCorrectly(fnpg)) {
-        showPageError("Could not determine framework competencies.  Check framework permissions.");
-    }
-    else if (doesFrameworkHaveCircularDependency(fnpg)) {
-        showFrameworkHasCircularDependencyWarning();
-    }
-    else {
+    // if (!frameworkCollapsedCorrectly(fnpg)) {
+    //     showPageError("Could not determine framework competencies.  Check framework permissions.");
+    // }
+    // else if (doesFrameworkHaveCircularDependency(fnpg)) {
+    //     showFrameworkHasCircularDependencyWarning();
+    // }
+    // else {
         prepForFrameworkDisplay(fnpg);
-    }
+    // }
 }
 
 function handleCollapseFrameworkFailure(err) {
