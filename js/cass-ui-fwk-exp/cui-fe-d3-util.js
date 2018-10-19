@@ -57,7 +57,7 @@ const ORANGE_RANGE_1 = "rgba(199,96,40,1)";
 var competencySearchAutoCompleteMap;
 
 var expSvg = d3.select(EXP_CIRCLE_PACK);
-var expCgMargin = 20;
+var expCgMargin = 5;
 var expCgDiameter = +expSvg.attr("width");
 var expCirclePackGraph =   expSvg;
 
