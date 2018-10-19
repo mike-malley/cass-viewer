@@ -741,9 +741,7 @@ function addChildToGraphProfileSummary(parentUl, childCcn, isRootComp) {
     if (isRootComp) childLi.addClass("gpsiRootComp");
     else childLi.addClass("gpsiNonRootComp");
     var cpt = currentFrameworkCompetencyData.competencyPacketDataMap[childCcn.id];
-    if (cpt.cassNodePacket.getNodeList().length > 1) childLi.html("<i>TODO: construct list view for multi node competency cluster</i>");
-    else {
-        var compNode = cpt.cassNodePacket.getNodeList()[0];
+        var compNode = cpt.cassNodePacket.getNodeList()[0]; //TODO addChildToGraphProfileSummary construct list view for multi node competency cluster
         var hasChildren = childCcn.children && childCcn.children.length > 0;
         childLi.html(generateCompetencyLineItemHtmlForGraphProfileSummary(compNode, hasChildren));
         if (hasChildren) {
@@ -758,7 +756,6 @@ function addChildToGraphProfileSummary(parentUl, childCcn, isRootComp) {
             });
             childLi.append(childsChildUl);
         }
-    }
     parentUl.append(childLi);
 }
 
