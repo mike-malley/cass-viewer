@@ -146,6 +146,8 @@ function generateNameFromCassNodePacket(cassNodePacket) {
         if (!cassNodePacket.getNodeList() || cassNodePacket.getNodeList().length == 0) return "";
         var nodePacketNodeList = cassNodePacket.getNodeList();
         $(nodePacketNodeList).each(function (i, n) {
+            if (name.indexOf(n.getName()) != -1)
+                return;
             if (i > 0) name = name + ", ";
             name = name + n.getName();
         });

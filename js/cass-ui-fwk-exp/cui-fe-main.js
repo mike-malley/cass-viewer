@@ -561,25 +561,22 @@ function generateCompetencyLineItemHtmlForListView(cpt, compNode, hasChildren) {
 function addChildToListView(parentUl, childCcn) {
     var childLi = $("<li/>");
     var cpt = currentFrameworkCompetencyData.competencyPacketDataMap[childCcn.id];
-    if (cpt.cassNodePacket.getNodeList().length > 1) childLi.html("<i>TODO: construct list view for multi node competency cluster</i>");
-    else {
-        var compNode = cpt.cassNodePacket.getNodeList()[0];
-        if (childCcn.children && childCcn.children.length > 0) childLi.addClass("collapsed");
-        childLi.attr("id", buildIDableString(compNode.getName().trim()) + "_lvi");
-        var hasChildren = childCcn.children && childCcn.children.length > 0;
-        childLi.html(generateCompetencyLineItemHtmlForListView(cpt, compNode, hasChildren));
-        if (hasChildren) {
-            childCcn.children.sort(function (a, b) {
-                return a.name.localeCompare(b.name);
-            });
-            var childsChildUl = $("<ul/>");
-            childsChildUl.attr("class", "fa-ul");
-            childsChildUl.attr("style", "display:none");
-            $(childCcn.children).each(function (i, cc) {
-                addChildToListView(childsChildUl, cc);
-            });
-            childLi.append(childsChildUl);
-        }
+    var compNode = cpt.cassNodePacket.getNodeList()[0]; //TODO: What if there are multiple nodes in the same packet?
+    if (childCcn.children && childCcn.children.length > 0) childLi.addClass("collapsed");
+    childLi.attr("id", buildIDableString(compNode.getName().trim()) + "_lvi");
+    var hasChildren = childCcn.children && childCcn.children.length > 0;
+    childLi.html(generateCompetencyLineItemHtmlForListView(cpt, compNode, hasChildren));
+    if (hasChildren) {
+        childCcn.children.sort(function (a, b) {
+            return a.name.localeCompare(b.name);
+        });
+        var childsChildUl = $("<ul/>");
+        childsChildUl.attr("class", "fa-ul");
+        childsChildUl.attr("style", "display:none");
+        $(childCcn.children).each(function (i, cc) {
+            addChildToListView(childsChildUl, cc);
+        });
+        childLi.append(childsChildUl);
     }
     parentUl.append(childLi);
 }
