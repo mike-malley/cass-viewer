@@ -205,16 +205,16 @@ function zoomExpCg(d) {
         });
     transition.selectAll("text")
         .filter(function (d) {
-            return d.parent === focus || this.style.visibility === "visible";
+            return d.parent === focus || this.style.display === "inline";
         })
         .style("fill-opacity", function (d) {
             return d.parent === focus ? 1 : 0;
         })
         .on("start", function (d) {
-            if (d.parent === focus) this.style.visibility = "visible";
+            if (d.parent === focus) this.style.display = "inline";
         })
         .on("end", function (d) {
-            if (d.parent !== focus) this.style.visibility = "hidden";
+            if (d.parent !== focus) this.style.display = "none";
         });
 }
 
@@ -422,8 +422,8 @@ function buildExpGraphCircles(error, root) {
         .style("fill-opacity", function (d) {
             return d.parent === root ? 1 : 0;
         })
-        .style("visibility", function (d) {
-            return d.parent === root ? "visible" : "hidden";
+        .style("display", function (d) {
+            return d.parent === root ? "inline" : "none";
         })
         .text(function (d) {
             if (typeof getExplorerCgCircleText === 'function') {
