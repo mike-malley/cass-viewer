@@ -165,6 +165,7 @@ function showPageAsBusy(text) {
 }
 
 function showPageError(text) {
+    console.error(text);
     $(CASSUI_MAIN_BUSY_CTR).hide();
     $(CASSUI_HIGH_LVL_WARNING).hide();
     hidePageMainContentsContainer();
