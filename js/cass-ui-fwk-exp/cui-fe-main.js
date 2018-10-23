@@ -15,6 +15,8 @@
 
 const CREATE_IMPLIED_RELATIONS_ON_COLLAPSE = true;
 
+const MAX_FWK_SEARCH_SIZE = 10000;
+
 //**************************************************************************************************
 // Variables
 
@@ -1016,7 +1018,7 @@ function fetchAvailableFrameworks() {
     showGraphViewMainContentsScreen();
     setPageFrameworkExplorerName("Loading...");
     showPageAsBusy("Loading available frameworks...");
-    EcFramework.search(repo, null, handleFetchFrameworksFromRepositorySuccess, handleFetchFrameworksFromRepositoryFailure, {});
+    EcFramework.search(repo, null, handleFetchFrameworksFromRepositorySuccess, handleFetchFrameworksFromRepositoryFailure, {'size':MAX_FWK_SEARCH_SIZE});
 }
 
 
