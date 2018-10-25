@@ -411,9 +411,9 @@ function setUpCompetencyDetailsModalView(comp) {
 }
 
 function openCompetencyDetailsModal(compId) {
-    var cpt = currentFrameworkCompetencyData.competencyPacketDataMap[compId];
-    if (!cpt) return;
-    var comp = cpt.cassNodePacket.getNodeList()[0];
+    var cpd = currentFrameworkCompetencyData.competencyPacketDataMap[compId];
+    if (!cpd) return;
+    var comp = cpd.cassNodePacket.getNodeList()[0];
     if (!comp) return;
     setUpCompetencyDetailsModalView(comp);
     enableModalInputsAndButtons();
@@ -547,7 +547,7 @@ function scrollToCompInListView(compName) {
     }
 }
 
-function generateCompetencyLineItemHtmlForListView(cpt, compNode, hasChildren) {
+function generateCompetencyLineItemHtmlForListView(cpd, compNode, hasChildren) {
     var liHtml = "<span class=\"competency-type\">" +
         "<a onclick=\"openCompetencyDetailsModal('" + compNode.getId().trim() + "');\">" +
         "<i class=\"fa fa-info-circle\" title=\"Show more details\" aria-hidden=\"true\"></i></a></span>" +
@@ -562,12 +562,12 @@ function generateCompetencyLineItemHtmlForListView(cpt, compNode, hasChildren) {
 //TODO addChildToListView construct list view for multi node competency cluster
 function addChildToListView(parentUl, childCcn) {
     var childLi = $("<li/>");
-    var cpt = currentFrameworkCompetencyData.competencyPacketDataMap[childCcn.id];
-    var compNode = cpt.cassNodePacket.getNodeList()[0]; //TODO: What if there are multiple nodes in the same packet?
+    var cpd = currentFrameworkCompetencyData.competencyPacketDataMap[childCcn.id];
+    var compNode = cpd.cassNodePacket.getNodeList()[0]; //TODO: What if there are multiple nodes in the same packet?
     if (childCcn.children && childCcn.children.length > 0) childLi.addClass("collapsed");
     childLi.attr("id", buildIDableString(compNode.getName().trim()) + "_lvi");
     var hasChildren = childCcn.children && childCcn.children.length > 0;
-    childLi.html(generateCompetencyLineItemHtmlForListView(cpt, compNode, hasChildren));
+    childLi.html(generateCompetencyLineItemHtmlForListView(cpd, compNode, hasChildren));
     if (hasChildren) {
         childCcn.children.sort(function (a, b) {
             return a.name.localeCompare(b.name);
@@ -635,8 +635,8 @@ function buildCompetencyGraphSidebarRelatedList(d3Node) {
     }
 }
 
-function showCompetencyGraphSidebarSingleNodePacketDetails(cpt) {
-    var compNode = cpt.cassNodePacket.getNodeList()[0];
+function showCompetencyGraphSidebarSingleNodePacketDetails(cpd) {
+    var compNode = cpd.cassNodePacket.getNodeList()[0];
     scrollCompNodeInGraphViewSummary(compNode);
     $(CIR_FCS_COMP_TOOLS).show();
     $(CIR_FCS_DTL_COMP_DTL_LINK).off("click").click(function () {
@@ -648,7 +648,7 @@ function showCompetencyGraphSidebarSingleNodePacketDetails(cpt) {
     }
     else $(CIR_FCS_DTL_SING_DESC).html("<i>No description available</i>");
     //use the D3Node instead of the competencyPacketData here because the root competencies point back to the framework as a parent
-    var d3n = currentFrameworkCompetencyData.competencyD3NodeTrackerMap[cpt.id];
+    var d3n = currentFrameworkCompetencyData.competencyD3NodeTrackerMap[cpd.id];
     buildCompetencyGraphSidebarRelatedList(d3n.d3Node);
     showCircleSidebarDetails();
 }
@@ -659,13 +659,13 @@ function showCircleGraphSidebarDetails(compId) {
     if (!compId || compId == null) return;
     else if (compId == currentFrameworkName) removeAllGraphViewSummaryHighLighting();
     else {
-        var cpt = currentFrameworkCompetencyData.competencyPacketDataMap[compId];
-        if (!cpt || cpt == null) debugMessage("Cannot locate competency tracker for: " + compId);
+        var cpd = currentFrameworkCompetencyData.competencyPacketDataMap[compId];
+        if (!cpd || cpd == null) debugMessage("Cannot locate competency data for: " + compId);
         else {
-            if (!cpt.cassNodePacket || cpt.cassNodePacket == null) debugMessage("cpt.cassNodePacket is null: " + compId);
-            else if (!cpt.cassNodePacket.getNodeList() || cpt.cassNodePacket.getNodeList() == null) debugMessage("cpt.cassNodePacket.getNodePacketList() is null: " + compId);
-            else if (cpt.cassNodePacket.getNodeList().length == 1) showCompetencyGraphSidebarSingleNodePacketDetails(cpt);
-            //else showCompetencyGraphSidebarMultiNodePacketDetails(cpt);
+            if (!cpd.cassNodePacket || cpd.cassNodePacket == null) debugMessage("cpd.cassNodePacket is null: " + compId);
+            else if (!cpd.cassNodePacket.getNodeList() || cpd.cassNodePacket.getNodeList() == null) debugMessage("cpd.cassNodePacket.getNodePacketList() is null: " + compId);
+            else if (cpd.cassNodePacket.getNodeList().length == 1) showCompetencyGraphSidebarSingleNodePacketDetails(cpd);
+            //else showCompetencyGraphSidebarMultiNodePacketDetails(cpd);
         }
     }
 }
@@ -742,8 +742,8 @@ function addChildToGraphProfileSummary(parentUl, childCcn, isRootComp) {
     var childLi = $("<li/>");
     if (isRootComp) childLi.addClass("gpsiRootComp");
     else childLi.addClass("gpsiNonRootComp");
-    var cpt = currentFrameworkCompetencyData.competencyPacketDataMap[childCcn.id];
-        var compNode = cpt.cassNodePacket.getNodeList()[0]; //TODO addChildToGraphProfileSummary construct list view for multi node competency cluster
+    var cpd = currentFrameworkCompetencyData.competencyPacketDataMap[childCcn.id];
+        var compNode = cpd.cassNodePacket.getNodeList()[0]; //TODO addChildToGraphProfileSummary construct list view for multi node competency cluster
         var hasChildren = childCcn.children && childCcn.children.length > 0;
         childLi.html(generateCompetencyLineItemHtmlForGraphProfileSummary(compNode, hasChildren));
         if (hasChildren) {

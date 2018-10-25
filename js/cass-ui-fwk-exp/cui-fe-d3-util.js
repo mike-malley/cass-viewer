@@ -2,8 +2,6 @@
 // CASS UI Framework Explorer D3 Utility Functions
 //**************************************************************************************************
 
-// TODO fix zooming behavior when clicking on text instead of circle
-
 //**************************************************************************************************
 // Constants
 
