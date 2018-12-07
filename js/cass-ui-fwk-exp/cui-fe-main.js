@@ -679,8 +679,8 @@ function expandGraphViewSummaryToObject(expObj) {
         expObj.attr("style", "display:block");
         if (expObj.parent().children().eq(0) && expObj.parent().children().eq(0).find("i:first")) {
             var ic = expObj.parent().children().eq(0).find("i:first");
-            if (ic && (ic.hasClass("fa-chevron-circle-down") || ic.hasClass("fa-chevron-circle-right"))) {
-                ic.attr("class", "fa fa-chevron-circle-down");
+            if (ic && (ic.hasClass("fa-chevron-down") || ic.hasClass("fa-chevron-right"))) {
+                ic.attr("class", "fa fa-chevron-down");
             }
         }
         if (expObj.parent() && expObj.parent().parent()) {
@@ -714,11 +714,11 @@ function buildProfileSummaryItemElementId(compNode) {
 
 //TODO toggleGraphProfileSummaryChild figure out bug with this
 function toggleGraphProfileSummaryChild(ce) {
-    if (ce.find('i:first').hasClass("fa-chevron-circle-right")) {
-        ce.find('i:first').attr("class", "fa fa-chevron-circle-down");
+    if (ce.find('i:first').hasClass("fa-chevron-right")) {
+        ce.find('i:first').attr("class", "fa fa-chevron-down");
         ce.parent().find('ul:first').attr("style", "display:block");
     } else {
-        ce.find('i:first').attr("class", "fa fa-chevron-circle-right");
+        ce.find('i:first').attr("class", "fa fa-chevron-right");
         ce.parent().find('ul:first').attr("style", "display:none");
     }
 }
@@ -726,7 +726,7 @@ function toggleGraphProfileSummaryChild(ce) {
 function generateCompetencyLineItemHtmlForGraphProfileSummary(compNode, hasChildren) {
     var liHtml = "";
     if (hasChildren) {
-        liHtml += "<a onclick=\"toggleGraphProfileSummaryChild($(this))\"><i class=\"fa fa-chevron-circle-right " + CIR_FCS_SUM_ITEM_CLASS_ID + "\" aria-hidden=\"true\"></i></a>";
+        liHtml += "<a onclick=\"toggleGraphProfileSummaryChild($(this))\"><i class=\"fa fa-chevron-right " + CIR_FCS_SUM_ITEM_CLASS_ID + "\" aria-hidden=\"true\"></i></a>";
     }
     else {
         liHtml += "<i class=\"fa fa-circle " + CIR_FCS_SUM_ITEM_CLASS_ID + "\" aria-hidden=\"true\"></i>";
