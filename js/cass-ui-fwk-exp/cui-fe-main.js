@@ -64,14 +64,14 @@ function getFirstFrameworkIdForName(name) {
 function getFrameworkName(frameworkId) {
     var fw = frameworkIdFrameworkMap[frameworkId];
     //if (fw) return fw.name;
-    if (fw) return fw.getName();
+    if (fw) return getStringVal(fw.getName());
     else return "Framework not found";
 }
 
 function getFrameworkDescription(frameworkId) {
     var fw = frameworkIdFrameworkMap[frameworkId];
     //if (fw) return fw.description;
-    if (fw) return fw.getDescription();
+    if (fw) return getStringVal(fw.getDescription());
     else return "";
 }
 
@@ -160,7 +160,7 @@ function populateFrameworkAlignmentFrameworkDropdowns(ddId, startOnCurrent) {
         var fw = availableFrameworkList[i];
         var fwo = $("<option />");
         fwo.val(fw.shortId());
-        fwo.text(fw.getName());
+        fwo.text(getStringVal(fw.getName()));
         if (startOnCurrent) {
             if (fw.shortId() == currentFrameworkId) {
                 fwo.attr("selected", "true");
@@ -442,7 +442,7 @@ function buildOpenFrameworkSearchAutoCompleteData() {
     for (var frameworkId in frameworkIdFrameworkMap) {
         if (frameworkIdFrameworkMap.hasOwnProperty(frameworkId)) {
             data.push({
-                label:frameworkIdFrameworkMap[frameworkId].getName(),
+                label:getStringVal(frameworkIdFrameworkMap[frameworkId].getName()),
                 value:frameworkId
             });
         }
@@ -788,7 +788,7 @@ function buildRelatedFrameworksGraphProfileSummaryList() {
             var relFwLi = $("<li/>");
             var relFwLink = $("<a/>");
             relFwLink.attr("onclick","prepFrameworkAlignmentWithFrameworkIds('" + currentFrameworkId + "','" + fw.shortId() + "');");
-            relFwLink.html(fw.getName());
+            relFwLink.html(getStringVal(fw.getName()));
             relFwLi.append(relFwLink);
             $(FWK_REL_FWK_LIST).append(relFwLi);
         }
@@ -962,8 +962,8 @@ function loadAndOpenFramework(frameworkId) {
 
 function createSortedAvailableFrameworkList(ownedFrameworkList,unownedFrameworkList) {
     availableFrameworkList = [];
-    ownedFrameworkList.sort(function (a, b) {return a.getName().localeCompare(b.getName());});
-    unownedFrameworkList.sort(function (a, b) {return a.getName().localeCompare(b.getName());});
+    ownedFrameworkList.sort(function (a, b) {return getStringVal(a.getName()).localeCompare(getStringVal(b.getName()));});
+    unownedFrameworkList.sort(function (a, b) {return getStringVal(a.getName()).localeCompare(getStringVal(b.getName()));});
     for (var i=0;i<ownedFrameworkList.length;i++) {
         availableFrameworkList.push(ownedFrameworkList[i]);
     }
@@ -984,12 +984,12 @@ function buildFrameworkLists(arrayOfEcFrameworks) {
     for (var i=0;i<arrayOfEcFrameworks.length;i++) {
         var cecf = arrayOfEcFrameworks[i];
         try {
-            if (cecf && cecf.getName() && cecf.getName().trim().length > 0) {
+            if (cecf && cecf.getName() && getStringVal(cecf.getName()).trim().length > 0) {
                 frameworkIdFrameworkMap[cecf.shortId()] = cecf;
-                if (!frameworkNameFrameworkMap[cecf.getName().trim()]) {
-                    frameworkNameFrameworkMap[cecf.getName().trim()] = [];
+                if (!frameworkNameFrameworkMap[getStringVal(cecf.getName()).trim()]) {
+                    frameworkNameFrameworkMap[getStringVal(cecf.getName()).trim()] = [];
                 }
-                frameworkNameFrameworkMap[cecf.getName().trim()].push(cecf);
+                frameworkNameFrameworkMap[getStringVal(cecf.getName()).trim()].push(cecf);
                 if (cecf.hasOwner(loggedInPk)) {
                     ownedFrameworkList.push(cecf);
                 }
