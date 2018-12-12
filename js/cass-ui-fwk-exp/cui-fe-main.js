@@ -63,14 +63,12 @@ function getFirstFrameworkIdForName(name) {
 
 function getFrameworkName(frameworkId) {
     var fw = frameworkIdFrameworkMap[frameworkId];
-    //if (fw) return fw.name;
     if (fw) return getStringVal(fw.getName());
     else return "Framework not found";
 }
 
 function getFrameworkDescription(frameworkId) {
     var fw = frameworkIdFrameworkMap[frameworkId];
-    //if (fw) return fw.description;
     if (fw) return getStringVal(fw.getDescription());
     else return "";
 }
