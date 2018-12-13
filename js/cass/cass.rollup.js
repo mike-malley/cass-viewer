@@ -3714,20 +3714,24 @@ FrameworkCollapser = stjs.extend(FrameworkCollapser, null, [], function(construc
     };
     prototype.parseCompetencies = function(rlda) {
         this.competencyArray = new Array();
-        var rld;
+        var c;
         for (var i = 0; i < rlda.length; i++) {
-            rld = rlda[i];
-            if ("competency".equalsIgnoreCase(rld.type)) 
-                this.competencyArray.push(rld);
+            if ("competency".equalsIgnoreCase(rlda[i].type)) {
+                c = new EcCompetency();
+                c.copyFrom(rlda[i]);
+                this.competencyArray.push(c);
+            }
         }
     };
     prototype.parseRelationships = function(rlda) {
         this.relationArray = new Array();
-        var rld;
+        var r;
         for (var i = 0; i < rlda.length; i++) {
-            rld = rlda[i];
-            if ("relation".equalsIgnoreCase(rld.type)) 
-                this.relationArray.push(rld);
+            if ("relation".equalsIgnoreCase(rlda[i].type)) {
+                r = new EcAlignment();
+                r.copyFrom(rlda[i]);
+                this.relationArray.push(r);
+            }
         }
     };
     prototype.addCompetenciesToFrameworkNodeGraph = function() {
