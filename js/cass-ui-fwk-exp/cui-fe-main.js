@@ -6,7 +6,6 @@
 //TODO addChildToListView construct list view for multi node competency cluster
 //TODO showCircleGraphSidebarDetails handle multi node packets
 
-//TODO toggleGraphProfileSummaryChild figure out bug with this
 //TODO saveFrameworkPublish define and implement
 
 
@@ -674,19 +673,16 @@ function showCircleGraphSidebarDetails(compId) {
 // Graph View Summary (Left-Hand Side)
 //**************************************************************************************************
 
-function expandGraphViewSummaryToObject(expObj) {
-    if (expObj.hasClass("gpsiChild")) {
-        expObj.attr("style", "display:block");
-        if (expObj.parent().children().eq(0) && expObj.parent().children().eq(0).find("i:first")) {
-            var ic = expObj.parent().children().eq(0).find("i:first");
-            if (ic && (ic.hasClass("fa-chevron-down") || ic.hasClass("fa-chevron-right"))) {
-                ic.attr("class", "fa fa-chevron-down");
-            }
-        }
-        if (expObj.parent() && expObj.parent().parent()) {
-            expandGraphViewSummaryToObject(expObj.parent().parent());
-        }
+function expandGraphViewSummaryToObject(toggleObj) {
+    if ((toggleObj.prop("tagName") && (toggleObj.prop("tagName").toLowerCase() == "a")) &&
+        toggleObj.find('i:first').hasClass("fa-chevron-right")) {
+        toggleGraphProfileSummaryChild(toggleObj);
     }
+    if (toggleObj.parent().hasClass(CIR_FCS_SUM_ITEM_NON_ROOT_COMP_CLASS)) {
+        var parentToToggle = toggleObj.parent().parent().parent().find('a:first');
+        if (parentToToggle.hasClass(CIR_FCS_SUM_ITEM_TOGGLE_CLASS_ID)) expandGraphViewSummaryToObject(parentToToggle);
+    }
+
 }
 
 function removeAllGraphViewSummaryHighLighting() {
@@ -694,11 +690,16 @@ function removeAllGraphViewSummaryHighLighting() {
 }
 
 function expandGraphViewSummaryToCompNode(compNode) {
-    var obj = $("#" + buildProfileSummaryItemElementId(compNode));
     removeAllGraphViewSummaryHighLighting();
-    obj.addClass("active");
-    var objPP = obj.parent().parent();
-    expandGraphViewSummaryToObject(objPP);
+    var toggleObj = $("#" + buildProfileSummaryItemToggleElementId(compNode));
+    var liObject = $("#" + buildProfileSummaryItemElementId(compNode));
+    liObject.addClass("active");
+    if (toggleObj.parent().hasClass(CIR_FCS_SUM_ITEM_ROOT_COMP_CLASS)  &&
+        (toggleObj.prop("tagName") && (toggleObj.prop("tagName").toLowerCase() == "a")) &&
+        toggleObj.find('i:first').hasClass("fa-chevron-right")) {
+            toggleGraphProfileSummaryChild(toggleObj);
+    }
+    else expandGraphViewSummaryToObject(toggleObj);
 }
 
 function scrollCompNodeInGraphViewSummary(compNode) {
@@ -712,7 +713,6 @@ function buildProfileSummaryItemElementId(compNode) {
     return buildIDableString(compNode.getId().trim()) + "_psi";
 }
 
-//TODO toggleGraphProfileSummaryChild figure out bug with this
 function toggleGraphProfileSummaryChild(ce) {
     if (ce.find('i:first').hasClass("fa-chevron-right")) {
         ce.find('i:first').attr("class", "fa fa-chevron-down");
@@ -723,13 +723,20 @@ function toggleGraphProfileSummaryChild(ce) {
     }
 }
 
+function buildProfileSummaryItemToggleElementId(compNode) {
+    return buildIDableString(compNode.getId().trim()) + "_psiToggle";
+}
+
 function generateCompetencyLineItemHtmlForGraphProfileSummary(compNode, hasChildren) {
     var liHtml = "";
     if (hasChildren) {
-        liHtml += "<a onclick=\"toggleGraphProfileSummaryChild($(this))\"><i class=\"fa fa-chevron-right " + CIR_FCS_SUM_ITEM_CLASS_ID + "\" aria-hidden=\"true\"></i></a>";
+        liHtml += "<a class=\"" + CIR_FCS_SUM_ITEM_TOGGLE_CLASS_ID + "\" " +
+            " id=\"" + buildProfileSummaryItemToggleElementId(compNode) + "\" + onclick=\"toggleGraphProfileSummaryChild($(this))\">" +
+            " <i class=\"fa fa-chevron-right " + CIR_FCS_SUM_ITEM_CLASS_ID + "\" aria-hidden=\"true\"></i></a>";
     }
     else {
-        liHtml += "<i class=\"fa fa-circle " + CIR_FCS_SUM_ITEM_CLASS_ID + "\" aria-hidden=\"true\"></i>";
+        liHtml += "<i id=\"" + buildProfileSummaryItemToggleElementId(compNode) + "\" class=\"fa fa-circle " + CIR_FCS_SUM_ITEM_CLASS_ID +
+            " " + CIR_FCS_SUM_ITEM_TOGGLE_CLASS_ID + "\" aria-hidden=\"true\"></i>";
     }
     liHtml += "&nbsp;&nbsp;<a class=\"psiItem\" id=\"" + buildProfileSummaryItemElementId(compNode) + "\" " +
         "onclick=\"zoomExpCgByD3NodeId('" + escapeSingleQuote(compNode.getId().trim()) + "',true)\">" +
@@ -740,8 +747,8 @@ function generateCompetencyLineItemHtmlForGraphProfileSummary(compNode, hasChild
 //TODO addChildToGraphProfileSummary construct list view for multi node competency cluster
 function addChildToGraphProfileSummary(parentUl, childCcn, isRootComp) {
     var childLi = $("<li/>");
-    if (isRootComp) childLi.addClass("gpsiRootComp");
-    else childLi.addClass("gpsiNonRootComp");
+    if (isRootComp) childLi.addClass(CIR_FCS_SUM_ITEM_ROOT_COMP_CLASS);
+    else childLi.addClass(CIR_FCS_SUM_ITEM_NON_ROOT_COMP_CLASS);
     var cpd = currentFrameworkCompetencyData.competencyPacketDataMap[childCcn.id];
         var compNode = cpd.cassNodePacket.getNodeList()[0]; //TODO addChildToGraphProfileSummary construct list view for multi node competency cluster
         var hasChildren = childCcn.children && childCcn.children.length > 0;

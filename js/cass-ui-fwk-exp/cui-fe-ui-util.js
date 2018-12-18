@@ -65,6 +65,10 @@ const CIR_FCS_SUM_DESC = "#circleFocusSummaryDesc";
 const CIR_FCS_SUM_LIST_CTR = "#circleFocusSummaryListContainer";
 
 const CIR_FCS_SUM_ITEM_CLASS_ID = "gpsi";
+const CIR_FCS_SUM_ITEM_TOGGLE_CLASS_ID = "gpsiToggle";
+const CIR_FCS_SUM_ITEM_ROOT_COMP_CLASS = "gpsiRootComp";
+const CIR_FCS_SUM_ITEM_NON_ROOT_COMP_CLASS = "gpsiNonRootComp";
+
 
 const FWK_REL_FWK_LIST_CTR = "#circleFocusRelatedFwListContainer";
 const FWK_REL_FWK_LIST = "#circleFocusRelatedFwList";
