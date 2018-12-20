@@ -412,7 +412,8 @@ body.theme-burgendy #fwkShareContactsListContainer {
 
 .expCircleGraph .label {
     fill: #fff;
-    font-size: 13x;
+    font-size: 13px;
+    font-weight: 600;
     text-anchor: middle;
     paint-order: stroke;
     stroke: rgb(0, 0, 0);
@@ -423,7 +424,7 @@ body.theme-burgendy #fwkShareContactsListContainer {
 
 .expCircleGraph .label-background {
     fill: #fff;
-    font-size: .6rem;
+    font-size: 13px;
     text-anchor: middle;
     paint-order: stroke;
     stroke: rgb(19, 116, 153);
