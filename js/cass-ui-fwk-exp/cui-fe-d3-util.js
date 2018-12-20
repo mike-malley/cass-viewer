@@ -352,21 +352,20 @@ function buildExpGraphCircles(error, root) {
         .attr("dy", .5)
         .attr("result", "offsetBlur");
     //important for opacity reduction on filter
-    var feComponentTransfer = filter.append("feComponentTransfer");
+    var feComponentTransfer = filter.append("feComponentTransfer")
+    .attr("in", "offsetBlur")
+    .attr("result", "linearSlope");
     feComponentTransfer.append("feFuncA")
-        .attr("in", "offsetBlur")
         .attr("type", "linear")
-        .attr("slope", ".6")
-        .attr("result", "opacityBlur");
-    filter.append("feComposite")
-        .attr("operator", "out")
-        .attr("in", "sourceGraphic");
-    // important for allowing manipulation of hover
-    var feMerge = filter.append("feMerge");
-    feMerge.append("feMergeNode")
-        .attr("in", "opacityBlur")
-    feMerge.append("feMergeNode")
-        .attr("in", "SourceGraphic");
+        .attr("slope", "0.6");
+
+  //important for opacity reduction on filter
+  // important for allowing manipulation of hover
+  var feMerge = filter.append("feMerge");
+  feMerge.append("feMergeNode")
+      .attr("in", "linearSlope")
+  feMerge.append("feMergeNode")
+      .attr("in", "SourceGraphic");
 
 
     expCgCircle = expCirclePackGraph.selectAll("circle")
