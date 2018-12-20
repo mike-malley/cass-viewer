@@ -119,6 +119,7 @@ body {
 
 h1, h2, h3, h4, h5 {
     font-family: var(--main-header-font) !important;
+    color: #0a0a0a;
 }
 
 tspan{
@@ -207,8 +208,8 @@ input:checked~.switch-paddle {
 }
 
 .cassUiModalInput {
-    width: 37rem;
-    margin-left: 1.5rem;
+    width: 100%;
+    margin: 1em auto;
 }
 
 .cassUiModalTextArea {
@@ -248,16 +249,13 @@ body.theme-burgendy #section-sub-menu #frameworkContentsSearchContainer .button:
     background-color: #662a36;
 }
 
-body.theme-burgendy  h3, h2 {
-    color: #662a36;
-}
 body.theme-burgendy .gpsi {
-    color: #000;
+    color: #662a36;
 }
 
 body.theme-burgendy .dropdown.menu .is-active>a,
 body.theme-burgendy a {
-    color: #000;
+    color: #662a36;
 }
 
 body.theme-burgendy .dropdown.menu>li.is-dropdown-submenu-parent>a::after {
@@ -280,13 +278,11 @@ body.theme-burgendy .expCircleGraph .node--leaf {
     /*!*    text-shadow: 0 1px 0 #000, 1px 0 0 #000, -1px 0 0 #000, 0 -1px 0 #000, 0 2px 0 #000, 2px 0 0 #000, -2px 0 0 #000, 0 -2px 0 #000;*!*/
 /*}*/
 
-body.theme-burgendy #circleFocusDetailsRelList li:hover {
-    color: rgb(151, 83, 95);
+body.theme-burgendy #circleFocusDetailsRelList li,
+body.theme-burgendy #circleFocusDetailsRelList a {
+    color: #662a36;
 }
 
-body.theme-burgendy #circleFocusDetailsRelList a:hover {
-    color: rgb(151, 83, 95) !important;
-}
 
 body.theme-burgendy #fwkShareContactsListContainer {
     background-color: #d9bcc1;
