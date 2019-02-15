@@ -1,6 +1,21 @@
 # Change Log
 
-## [Unreleased](https://github.com/cassproject/cass-viewer/tree/HEAD)
+## [1.0.6](https://github.com/cassproject/cass-viewer/tree/1.0.6) (2019-02-15)
+[Full Changelog](https://github.com/cassproject/cass-viewer/compare/1.0.5...1.0.6)
+
+## [1.0.5](https://github.com/cassproject/cass-viewer/tree/1.0.5) (2019-02-08)
+[Full Changelog](https://github.com/cassproject/cass-viewer/compare/0.4.26...1.0.5)
+
+## [0.4.26](https://github.com/cassproject/cass-viewer/tree/0.4.26) (2019-01-18)
+[Full Changelog](https://github.com/cassproject/cass-viewer/compare/1.0.3...0.4.26)
+
+## [1.0.3](https://github.com/cassproject/cass-viewer/tree/1.0.3) (2019-01-17)
+[Full Changelog](https://github.com/cassproject/cass-viewer/compare/1.0.4...1.0.3)
+
+## [1.0.4](https://github.com/cassproject/cass-viewer/tree/1.0.4) (2019-01-17)
+**Fixed bugs:**
+
+- Print and Export buttons don't do anything. [\#10](https://github.com/cassproject/cass-viewer/issues/10)
 
 **Closed issues:**
 
