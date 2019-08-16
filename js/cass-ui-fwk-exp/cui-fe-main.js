@@ -391,9 +391,9 @@ function saveCompetencyInfoFromFrameworkExp() {
 }
 
 function setUpCompetencyDetailsModalView(comp) {
-    $(COMP_DTL_NAME).val(comp.getName().trim());
-    $(COMP_DTL_DESC).val(comp.getDescription().trim());
-    $(COMP_DTL_COMP_LINK).html(buildFrameworkCompetencyHyperlink(currentFrameworkId,comp.id,comp.getName().trim()));
+    $(COMP_DTL_NAME).val(getStringVal(comp.getName()).trim());
+    $(COMP_DTL_DESC).val(getStringVal(comp.getDescription()).trim());
+    $(COMP_DTL_COMP_LINK).html(buildFrameworkCompetencyHyperlink(currentFrameworkId,comp.id,getStringVal(comp.getName()).trim()));
     $(COMP_DTL_FRM_LINK).html(buildFrameworkHyperlink(currentFrameworkId,currentFrameworkName));
     if (userOwnsCurrentFramework) {
         competencyIdToSave = comp.getId();
@@ -564,7 +564,7 @@ function addChildToListView(parentUl, childCcn) {
     var cpd = currentFrameworkCompetencyData.competencyPacketDataMap[childCcn.id];
     var compNode = cpd.cassNodePacket.getNodeList()[0]; //TODO: What if there are multiple nodes in the same packet?
     if (childCcn.children && childCcn.children.length > 0) childLi.addClass("collapsed");
-    childLi.attr("id", buildIDableString(compNode.getName().trim()) + "_lvi");
+    childLi.attr("id", buildIDableString(getStringVal(compNode.getName()).trim()) + "_lvi");
     var hasChildren = childCcn.children && childCcn.children.length > 0;
     childLi.html(generateCompetencyLineItemHtmlForListView(cpd, compNode, hasChildren));
     if (hasChildren) {
@@ -641,9 +641,9 @@ function showCompetencyGraphSidebarSingleNodePacketDetails(cpd) {
     $(CIR_FCS_DTL_COMP_DTL_LINK).off("click").click(function () {
         openCompetencyDetailsModal(compNode.getId().trim());
     });
-    $(CIR_FCS_DTL_SING_NAME).html(compNode.getName().trim());
-    if (compNode.getDescription() && compNode.getDescription().trim().length > 0) {
-        $(CIR_FCS_DTL_SING_DESC).html(compNode.getDescription().trim());
+    $(CIR_FCS_DTL_SING_NAME).html(getStringVal(compNode.getName()).trim());
+    if (compNode.getDescription() && getStringVal(compNode.getDescription()).trim().length > 0) {
+        $(CIR_FCS_DTL_SING_DESC).html(getStringVal(compNode.getDescription()).trim());
     }
     else $(CIR_FCS_DTL_SING_DESC).html("<i>No description available</i>");
     //use the D3Node instead of the competencyPacketData here because the root competencies point back to the framework as a parent
@@ -740,7 +740,7 @@ function generateCompetencyLineItemHtmlForGraphProfileSummary(compNode, hasChild
     }
     liHtml += "&nbsp;&nbsp;<a class=\"psiItem\" id=\"" + buildProfileSummaryItemElementId(compNode) + "\" " +
         "onclick=\"zoomExpCgByD3NodeId('" + escapeSingleQuote(compNode.getId().trim()) + "',true)\">" +
-        compNode.getName().trim() + "</a>";
+        getStringVal(compNode.getName()).trim() + "</a>";
     return liHtml;
 }
 
