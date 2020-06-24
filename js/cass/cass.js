@@ -31595,6 +31595,11 @@ EcRemote = stjs.extend(EcRemote, null, [], function(constructor, prototype) {
                         if (failure != null) 
                             failure(xhrx.responseText);
             };
+            xhr.onerror = function(e) {
+                if (failure != null) {
+                    failure(null);
+                }
+            };
         }
         if (xhr != null) {
             if (EcRemote.async) 
@@ -62262,6 +62267,8 @@ EcRepository = stjs.extend(EcRepository, null, [], function(constructor, prototy
         if (EcRepository.caching) {
             delete (EcRepository.cache)[data.id];
             delete (EcRepository.cache)[data.shortId()];
+            if (repo != null) 
+                delete (EcRepository.cache)[EcRemoteLinkedData.veryShortId(repo.selectedServer, data.getGuid())];
         }
         if (data.invalid()) {
             failure("Data is malformed.");
@@ -62392,6 +62399,7 @@ EcRepository = stjs.extend(EcRepository, null, [], function(constructor, prototy
         if (EcRepository.caching) {
             delete (EcRepository.cache)[data.id];
             delete (EcRepository.cache)[data.shortId()];
+            delete (EcRepository.cache)[EcRemoteLinkedData.veryShortId(this.selectedServer, data.getGuid())];
         }
         var targetUrl;
         if (EcRepository.shouldTryUrl(data.id)) 
@@ -62497,6 +62505,7 @@ EcRepository = stjs.extend(EcRepository, null, [], function(constructor, prototy
                     }
                     (EcRepository.cache)[d.shortId()] = d;
                     (EcRepository.cache)[d.id] = d;
+                    (EcRepository.cache)[EcRemoteLinkedData.veryShortId(me.selectedServer, d.getGuid())] = d;
                 }
             }
             if (success != null) {
@@ -63127,6 +63136,7 @@ EcRepository = stjs.extend(EcRepository, null, [], function(constructor, prototy
             if (EcRepository.caching) {
                 (EcRepository.cache)[d.shortId()] = d;
                 (EcRepository.cache)[d.id] = d;
+                (EcRepository.cache)[EcRemoteLinkedData.veryShortId(this.selectedServer, d.getGuid())] = d;
             }
             if (eachSuccess != null) {
                 eachSuccess(results[i]);
@@ -68172,7 +68182,14 @@ EcFrameworkGraph = stjs.extend(EcFrameworkGraph, EcDirectedGraph, [], function(c
     prototype.addFramework = function(framework, repo, success, failure) {
         this.frameworks.push(framework);
         var me = this;
-        repo.multiget(framework.competency.concat(framework.relation), function(data) {
+        var precache = new Array();
+        if (framework.competency != null) {
+            precache = precache.concat(framework.competency);
+        }
+        if (framework.relation != null) {
+            precache = precache.concat(framework.relation);
+        }
+        repo.multiget(precache, function(data) {
             var competencyTemplate = new EcCompetency();
             var alignmentTemplate = new EcAlignment();
             var eah = new EcAsyncHelper();
