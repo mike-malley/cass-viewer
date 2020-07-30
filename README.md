@@ -1,3 +1,5 @@
+[![Gitpod ready-to-code](https://img.shields.io/badge/Gitpod-ready--to--code-blue?logo=gitpod)](https://gitpod.io/#https://github.com/cassproject/cass-viewer)
+
 [![Build Status](https://travis-ci.org/cassproject/cass-viewer.svg?branch=master)](https://travis-ci.org/cassproject/cass-viewer)
 # cass-viewer
 Competency and Skills Service -- Framework Explorer
